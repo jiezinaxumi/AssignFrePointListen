@@ -13,7 +13,7 @@ abstract class Buffer {
 	 * @Description: 初始化固定的字节流
 	 * void
 	 */ 
-	public abstract void initBuffer();
+	protected abstract void initBuffer();
 	
 	
 	/** 
