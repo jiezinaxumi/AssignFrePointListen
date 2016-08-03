@@ -213,27 +213,31 @@ public class ControllerService implements Runnable {
 	/** 
 	 * @Method: start 
 	 * @Description: 开启服务（控制器）
-	 * @param port 端口
-	 * @throws IOException
 	 * void
 	 */ 
-	public static void start() throws IOException{
+	public static void start(){
 		//服务端在5770端口监听客户端请求的TCP连接  
-        ServerSocket server = new ServerSocket(Config.CONTROLLER_TCP_PORT);  
-        Socket receiver = null;  
-        boolean f = true;  
-        while(f){  
-            //等待客户端的连接，如果没有获取连接  
-        	receiver = server.accept();  
-            System.out.println("与客户端连接成功！");  
-            //为每个客户端连接开启一个线程  
-            ControllerService controllerService = new ControllerService(receiver);
-            new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
-            new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
-            
-            f = false;
-        }  
-        server.close();  
+        ServerSocket server;
+		try {
+			server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
+			Socket receiver = null;  
+			boolean f = true;  
+			while(f){  
+				//等待客户端的连接，如果没有获取连接  
+				receiver = server.accept();  
+				System.out.println("与客户端连接成功！");  
+				//为每个客户端连接开启一个线程  
+				ControllerService controllerService = new ControllerService(receiver);
+				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
+				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
+				
+				f = false;
+			}  
+			server.close();  
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  
 	}
 	
 	/** 

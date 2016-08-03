@@ -8,6 +8,7 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 import com.buffer.WorkstationBuffer;
+import com.listener.WorkstationListener;
 import com.util.Config;
 import com.util.Tools;
 
@@ -21,37 +22,53 @@ public class Workstation implements Runnable{
     private WorkstationBuffer workstationBuffer;
     private DatagramSocket datagramSocket;
     
+    private WorkstationListener workstationListener;
+    
     private final int MAX_RECEIVE_BUFFER = 65508;
     
-    /**
-     * @param port 工作站端口
-     */
-    public Workstation(int port){
+    public Workstation(){
     	try {
-			datagramSocket = new DatagramSocket(port);
+			datagramSocket = new DatagramSocket(Config.WORKSTATION_UDP_PORT);
 			workstationBuffer = new WorkstationBuffer();
-			
-			new Thread(this).start();
-			
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
+     
+    public void setWorkstationListener(WorkstationListener workstationListener) {
+		this.workstationListener = workstationListener;
+	}
     
     /** 
+     * @Method: setFrequennce 
+     * @Description: 设置频率 需在调频之前设置
+     * @param frequence  射频   取值范围00 000 000~29 999 999 字符串
+     * void
+     */ 
+    public void setFrequennce(final String frequence){
+    	workstationBuffer.setFrequence(frequence);
+    	workstationBuffer.initBuffer();
+    }
+
+	/** 
      * @Method: sendMessage 
      * @Description: 采用UDP/Ip 发送数据的通用接口
-     * @param buffer 数据
+     * @param bytes 数据
      * @param length 长度
      * @param IP 目标IP
      * @param port 目标端口
      * @throws IOException
      * void
      */ 
-    public void sendMessage(byte []buffer, String IP, int port) throws IOException{
-    	DatagramPacket dpSend = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(IP), port); 
-    	datagramSocket.send(dpSend);
+    public void sendMessage(byte[] bytes, String IP, int port){
+    	try {
+    		DatagramPacket dpSend = new DatagramPacket(bytes, bytes.length, InetAddress.getByName(IP), port); 
+			datagramSocket.send(dpSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
     
     /** 
@@ -62,30 +79,50 @@ public class Workstation implements Runnable{
      */ 
     public void sendApplyMessageByReportBuffer(byte[] reportBuffer){
     	workstationBuffer.initApplyBufferByReportBuffer(reportBuffer);
-    	try {
-    		byte[] applyBuffer = workstationBuffer.getApplyBuffer();
-    		
-    		//打印
-    		System.out.print("发送");
-    		Tools.printHexString(applyBuffer);
-    		
-			sendMessage(applyBuffer, Config.CONTROLLER_IP, Config.CONTROLLER_UDP_PORT);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    	byte[] applyBuffer = workstationBuffer.getApplyBuffer();
+		
+		//打印
+		System.out.print("发送");
+		Tools.printHexString(applyBuffer);
+		
+		sendMessage(applyBuffer, Tools.getLocalIP(), Config.CONTROLLER_UDP_PORT);
+    }
+    
+    /** 
+     * @Method: sendConfirmSTCPBufferByReceivedBuffer 
+     * @Description: 发送接收确认报文
+     * @param receivedBuffer 接收机发过来的stcp报文
+     * @param IP 接收机IP
+     * @param port 接收机端口
+     * void
+     * @throws IOException 
+     */ 
+    public void sendConfirmSTCPBufferByReceivedBuffer(byte[] receivedBuffer, String IP, int port){
+    	workstationBuffer.initStcpBufferByReveiverStcpBuffer(receivedBuffer);
+    	
+        byte[] buffer = workstationBuffer.getConfirmStcpBuffer();
+    	
+//    	Tools.printSTCP(buffer);
+    	
+    	sendMessage(buffer, IP, port);
     }
     
     /** 
      * @Method: setConnectSTCPBufferByReceivedBuffer 
-     * @Description: 发送确认连接（收到接收机的虚连接请求，做出应答）
-     * @param receivedBuffer 连接请求的stcp报文
+     * @Description: 发送带有参数块的STCP报文  控制接收机
+     * @param receivedBuffer 接收机返回的stcp报文
+     * @param IP 接收机IP
+     * @param port 接收机端口
      * void
      * @throws IOException 
      */ 
-    public void sendConnectSTCPBufferByReceivedBuffer(byte[] receivedBuffer) throws IOException{
+    public void sendSTCPBufferByReceivedBuffer(byte[] receivedBuffer, String IP, int port){
     	workstationBuffer.initStcpBufferByReveiverStcpBuffer(receivedBuffer);
-    	sendMessage(workstationBuffer.getStcpControlBuffer(), Config.RECEIVER_IP, Config.RECEIVER_UDP_PORT);
+    	byte[] buffer = workstationBuffer.getStcpBufferByReveiverStcpBuffer(receivedBuffer);
+    	
+    	Tools.printSTCP(buffer);
+    	
+    	sendMessage(buffer, IP, port);
     }
 
     /** 
@@ -98,15 +135,17 @@ public class Workstation implements Runnable{
     	byte[] buffer = new byte[MAX_RECEIVE_BUFFER];
 		DatagramPacket dpReceived = new DatagramPacket(buffer, MAX_RECEIVE_BUFFER);
 		
-		boolean f = true;
+		boolean f = true;	
 		while(f){
-			datagramSocket.receive(dpReceived);//接受来自接收机的数据
-			byte[] receivedBuffer = Arrays.copyOfRange(dpReceived.getData(), 0, dpReceived.getLength()); 
+			datagramSocket.receive(dpReceived);//接受来自接收机的STCP数据
 			
-			Tools.printHexString(receivedBuffer);
+			int port = dpReceived.getPort();
+			String ip = dpReceived.getAddress().toString();
+			ip = ip.substring(1, ip.length());  // 原ip的格式为/192.168.10.107  去反斜杠
+
+			byte[] stcp = Arrays.copyOfRange(dpReceived.getData(), 0, dpReceived.getLength()); 
 			
-//			sendConnectSTCPBufferByReceivedBuffer(receivedBuffer);
-			
+			workstationListener.onReveicedSTCP(stcp, ip, port);
 			
 			dpReceived.setLength(MAX_RECEIVE_BUFFER);
 		}
@@ -124,6 +163,8 @@ public class Workstation implements Runnable{
 		}
 		
 	}
-    
-
+	
+	public void start(){
+		new Thread(this).start();
+	}
 }

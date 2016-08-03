@@ -50,7 +50,7 @@ public class ControllerBuffer extends Buffer {
 		distributionBuffer[31] = 0x00;
 		
 		//分配报中工作站IP
-		byte[] workstationIp = Config.WORKSTATION_IP.getBytes();
+		byte[] workstationIp = Tools.getLocalIP().getBytes();
 		System.arraycopy(workstationIp, 0, distributionBuffer, 15, workstationIp.length);
 		
 		//分配报中工作站的STCP端口号

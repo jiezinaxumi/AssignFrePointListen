@@ -1,5 +1,7 @@
 package com.buffer;
 
+import java.util.ArrayList;
+
 import com.util.Config;
 import com.util.Tools;
 
@@ -9,29 +11,76 @@ import com.util.Tools;
  * 2016年7月28日
  */
 public class WorkstationBuffer extends Buffer {
-	private byte[] applyBuffer = new byte[68]; //申请报
+	private final boolean isSettingReceiverModel = true; //设置接收机型号
+	
+	private byte[] applyBuffer = new byte[isSettingReceiverModel? 68 : 52]; //申请报
 	private byte[] stcpControlBuffer = new byte[16]; //stcp 控制块
+	private byte[] stcpArgsBuffer = new byte[MAX_SIZE]; //stcp参数块
+	private byte[] stcpBuffer;
 	
-	public WorkstationBuffer(){
-		initBuffer();
+	private String frequence = null; //射频
+	
+	int stcpSize = 0; //报文长度
+	
+	public void setFrequence(final String frequence) {
+		this.frequence = frequence;
 	}
-	
+
+	/** 
+	 * @Method: getApplyBuffer 
+	 * @Description: 返回申请报
+	 * @return
+	 * byte[]
+	 */ 
 	public byte[] getApplyBuffer(){
 		return applyBuffer;
 	}
 
-	public byte[] getStcpControlBuffer() {
+	/** 
+	 * @Method: getConfirmStcpBuffer 
+	 * @Description: 返回确认连接的STCP报文 无参数块
+	 * @return
+	 * byte[]
+	 */ 
+	public byte[] getConfirmStcpBuffer() {
 		return stcpControlBuffer;
+	}
+	
+	/** 
+	 * @Method: getStcpBuffer 
+	 * @Description: 返回带有控制信息的STCP报文 有参数块
+	 * @return
+	 * byte[]
+	 */ 
+	public byte[] getStcpBufferByReveiverStcpBuffer(byte[] buffer){
+		//重设控制块信息
+		stcpControlBuffer[6] = 0x02;
+		stcpControlBuffer[8] = buffer[0];
+		stcpControlBuffer[9] = buffer[1];
+		stcpControlBuffer[10] = buffer[2];
+		stcpControlBuffer[11] = buffer[3];
+		stcpControlBuffer[14] = (byte) (stcpSize & 0xFF);
+		stcpControlBuffer[15] = (byte) (stcpSize >> 8 & 0xFF);
+		
+		stcpBuffer = new byte[stcpSize];
+		
+		//将控制块和参数块组装
+		System.arraycopy(stcpControlBuffer, 0, stcpBuffer, 0, stcpControlBuffer.length);
+		System.arraycopy(stcpArgsBuffer, 0, stcpBuffer, stcpControlBuffer.length, stcpSize - stcpControlBuffer.length);
+		return stcpBuffer;	
 	}
 
 	@Override
 	public void initBuffer() {
 		// TODO Auto-generated method stub
+		//申请报
 		applyBuffer[0] = 0x04;
-		applyBuffer[1] = 0x34;//当选定接收机型号时填入0x44
+		applyBuffer[1] = isSettingReceiverModel? 0x44 : 0x34;//当选定接收机型号时填入0x44
 		applyBuffer[2] = 0x00;
 		applyBuffer[3] = getCheckCode(applyBuffer, 3);
-		applyBuffer[9] = 0x04;
+		applyBuffer[5] = Config.UNIT_NUMBER & 0xFF;
+		applyBuffer[6] = Config.UNIT_NUMBER >> 8 & 0xFF;
+		applyBuffer[9] = isSettingReceiverModel? 0x05 : 0x04;
 		applyBuffer[10] = 0x06;
 		applyBuffer[11] = 0x00;
 		applyBuffer[12] = Config.USE_WAY;
@@ -45,12 +94,34 @@ public class WorkstationBuffer extends Buffer {
 		applyBuffer[35] = 0x00;
 		
 		//ip
-		byte[] ip = Config.WORKSTATION_IP.getBytes();
+		byte[] ip = Tools.getLocalIP().getBytes();
 		System.arraycopy(ip, 0, applyBuffer, 15, ip.length);
 		
 		//申请口令
 		byte[] applyPwd = Config.APPLAY_PWD.getBytes();
-		System.arraycopy(applyPwd, 0, applyBuffer, 36, applyPwd.length);	
+		System.arraycopy(applyPwd, 0, applyBuffer, 36, applyPwd.length);
+		
+		//stcp 参数模块
+		stcpArgsBuffer[0] = 0x7E;
+		stcpArgsBuffer[1] = 0x16;
+		stcpArgsBuffer[2] = (byte)0x8F;
+		
+		//参数区
+		String args = "";
+		if (frequence != null) {
+			args += "F" + frequence;
+		}
+		args +="M01"+"DAT" + Integer.toHexString(Config.RETURN_TYPE) + "LEN1024";  //设置射频和返回的数据类型
+		byte[] argsBuffer = args.getBytes();
+		int argsSize = argsBuffer.length;
+				
+		stcpArgsBuffer[3] = (byte) (argsSize & 0xFF);
+		stcpArgsBuffer[4] = (byte) (argsSize >> 8 & 0xFF);
+		
+		//添加参数
+		System.arraycopy(argsBuffer, 0, stcpArgsBuffer, 5, argsSize);
+		
+		stcpSize = argsSize + 5 + 16; //报文长度 = 参数 区 + 参数块（5字节）+ 控制块（16字节）
 	}
 	
 	/** 
@@ -61,10 +132,13 @@ public class WorkstationBuffer extends Buffer {
 	 */ 
 	public void initApplyBufferByReportBuffer(byte[] reportBuffer){
 		applyBuffer[4] = reportBuffer[4];
-		applyBuffer[5] = reportBuffer[5];
-		applyBuffer[6] = reportBuffer[6];
 		applyBuffer[7] = reportBuffer[7];
 		applyBuffer[8] = reportBuffer[8];
+		if (isSettingReceiverModel) {
+			applyBuffer[52] = 0x00;
+			applyBuffer[53] = 0x00;
+			System.arraycopy(reportBuffer, 12, applyBuffer, 54, 14);
+		}
 	}
 	
 	/** 
@@ -81,20 +155,20 @@ public class WorkstationBuffer extends Buffer {
 		stcpControlBuffer[1] = (byte) (headSequence >> 8 & 0xFF);
 		stcpControlBuffer[2] = (byte) (headSequence >> 16 & 0xFF);
 		stcpControlBuffer[3] = (byte) (headSequence >> 24 & 0xFF);
-		
 		stcpControlBuffer[4] = getCheckCode(stcpControlBuffer, 4);
-		stcpControlBuffer[5] = buffer[5];
 		
+		stcpControlBuffer[5] = buffer[5];
 		stcpControlBuffer[6] = 0x00;
 		stcpControlBuffer[7] = 0x01;
-		stcpControlBuffer[8] = 0x00;
-		stcpControlBuffer[9] = 0x00;
-		stcpControlBuffer[10] = 0x00;
-		stcpControlBuffer[11] = 0x00;
+		
+		stcpControlBuffer[8] = buffer[0];
+		stcpControlBuffer[9] = buffer[1];
+		stcpControlBuffer[10] = buffer[2];
+		stcpControlBuffer[11] = buffer[3];
 		
 		stcpControlBuffer[12] = 0x00;
 		stcpControlBuffer[13] = 0x00;
-		stcpControlBuffer[14] = (byte)0xF1;
+		stcpControlBuffer[14] = (byte)0x10;
 		stcpControlBuffer[15] = 0x00;
 		
 	}
