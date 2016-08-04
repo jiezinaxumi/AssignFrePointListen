@@ -15,8 +15,6 @@ public class Config {
 	
 	public static final String APPLAY_PWD = "abcdeabcdeabcdea"; //申请口令 16个数字，英文字符
 	
-    public static final String RF = "20090100";  //射频   取值范围00 000 000~29 999 999
-	
 	public static final int RETURN_TYPE = 0x80; //数据返回类型
 	
 	public static final int UNIT_NUMBER = 0x0000; //单位编号  2字节

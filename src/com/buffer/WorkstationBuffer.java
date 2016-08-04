@@ -1,7 +1,5 @@
 package com.buffer;
 
-import java.util.ArrayList;
-
 import com.util.Config;
 import com.util.Tools;
 

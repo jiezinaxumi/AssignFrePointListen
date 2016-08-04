@@ -1,26 +1,12 @@
 
-import java.io.IOException;
-
-
-
-
-
-
-
-
-
-import com.client.Workstation;
-import com.listener.ControllerListener;
 import com.manager.CWManager;
-import com.service.ControllerService;
-import com.util.Config;
 
 
 public class Test {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub  
-		CWManager.getInstance().contorlAndGetData("06210000", "D://", 5, 15);
+		CWManager.getInstance().contorlAndGetData("07600000", "D://", 5, 5);
 	}
 
 }

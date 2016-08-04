@@ -1,14 +1,16 @@
 package com.util;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Properties;
 
 public class Tools {
 	// 将指定byte数组以16进制的形式打印到控制台
@@ -108,7 +110,8 @@ public class Tools {
 				}
 			}
 			
-			System.out.print("[" + j + "]" + hex.toUpperCase() +  " ");
+//			System.out.print("[" + j + "]" + hex.toUpperCase() +  " ");
+			System.out.print("[" + j + "]" + buffer[i] +  " ");
 		}
     	System.out.println("\n");
     }
@@ -131,9 +134,17 @@ public class Tools {
 		return ip;
 	}
     
-    static FileWriter fw = null;
+    static FileOutputStream fw = null;
     static String filePath = null;
-    public static void writeToFile(final String path, String content){
+    /** 
+     * @Method: writeToFile 
+     * @Description: 写数据到文件
+     * @param path 文件的输出路径+文件名
+     * @param content byte数组  数据内容
+     * @param startPos 数据起始位子 结束位置到文件末尾
+     * void
+     */ 
+    public static void writeToFile(final String path, byte[] content, int startPos){
     	//是新文件 如果fw不为空 说明已写过文件 则flush到文件然后close， 然后重新new一个
     	if (!path.equals(filePath)) {
     		if (fw != null) {
@@ -152,11 +163,10 @@ public class Tools {
 				}
 				
 			}
-			
     		
     		filePath = path;
 		    try {
-				fw = new FileWriter(path, true);
+				fw = new FileOutputStream(path, true);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -165,13 +175,18 @@ public class Tools {
     
     
     	try {
-			fw.write(content);
+			fw.write(content, startPos, content.length - startPos);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
     }
-    
+       
+    /** 
+     * @Method: writeToFileEnd 
+     * @Description: 写数据结束时调用 
+     * void
+     */ 
     public static void writeToFileEnd(){
     	if (fw != null) {
 			try {
@@ -190,6 +205,37 @@ public class Tools {
 		}
     }
     
+    /** 
+     * @Method: mvSrcFileToDestFile 
+     * @Description: 移动文件
+     * @param srcFileName 源文件（绝对路径加文件名）
+     * @param destFileName 目标文件（绝对路径加文件名）
+     * void
+     */ 
+    public static void mvSrcFileToDestFile(final String srcFileName, final String destFileName){
+    	File file = new File(srcFileName);
+    	try {
+			FileInputStream is = new FileInputStream(file);
+			FileOutputStream os = new FileOutputStream(destFileName, true);
+			try {
+				int data;
+				while((data = is.read()) != -1){
+					os.write(data);
+				}
+				os.flush();
+				os.close();
+				is.close();
+				file.delete();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
     static SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
     public static String getCurrentTime(){
     	return df.format(new Date());
@@ -198,4 +244,22 @@ public class Tools {
     public static long getCurrentSecond(){
     	return new Date().getTime() / 1000;
     }
+    
+    //读取properties文件
+	public static String getProperty(String key) {
+		String value = null;
+		Properties pps = new Properties();
+		try {
+			String path = Thread.currentThread().getContextClassLoader().getResource("assign_fre_point_listen.properties").getPath();
+			pps.load(new FileInputStream(path));
+			value = pps.getProperty(key);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return value;
+	}
+    
+    public static void main(String[] args) {
+		mvSrcFileToDestFile("D:\\haha.wav", "D:\\haha1.wav");
+	}
 }

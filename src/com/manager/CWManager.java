@@ -1,13 +1,10 @@
 package com.manager;
 
-import java.io.FileWriter;
-import java.util.Date;
-
+import com.buffer.WaveHeader;
 import com.client.Workstation;
 import com.listener.ControllerListener;
 import com.listener.WorkstationListener;
 import com.service.ControllerService;
-import com.util.Config;
 import com.util.Tools;
 
 /**
@@ -18,19 +15,22 @@ import com.util.Tools;
  */
 public class CWManager {
 	private static CWManager cwManager = null;
-	private FileWriter fileWriter;
-	
 	private String frequence;
 	private String savePath;
 	private String fileName;
+	private String fileTemp;
+
 	private int fileTime;
 	private int totalTime;
 	
+	private long changeFileNameBetweenTime; //改变文件名的时间间隔 如果间隔一样 则不改变文件名
 	private long beginTime;
 	private long currentTime;
 	
+	private int dataLength;
+	
 	boolean beginWrite = false; // 开始写文件
-		
+	
 	private void run(){
 		//配置工作站
 		final Workstation workstation = new Workstation();
@@ -45,11 +45,11 @@ public class CWManager {
 			@Override
 			public void onReveicedSTCP(byte[] stcp, String ip, int port) {
 				// TODO Auto-generated method stub
-				Tools.printSTCP(stcp);
+//				Tools.printSTCP(stcp);
 				
 				//发送调频信息
 				if (!isControlReceiver && isConfirm) {
-					System.out.println("控制接收机 调频 " + Config.RF);
+					System.out.println("控制接收机 调频 " + frequence);
 					workstation.sendSTCPBufferByReceivedBuffer(stcp, ip, port);
 					isControlReceiver = true;
 				}
@@ -65,7 +65,7 @@ public class CWManager {
 						if (stcp[i] == frequenceBety[j]) {
 							j++;
 							if (j == frequence.length()) {
-								System.out.println("调频成功");
+								System.out.println("《调频成功》\n");
 								isSucces = true;
 								break;
 							}
@@ -80,7 +80,7 @@ public class CWManager {
 				
 				//存储调频后的数据区
 				if (isSucces) {
-					int i = 0;
+					int i = 15;
 					//查找数据区的起始位置
 					for (; i < stcp.length; i++) {
 						if ((stcp[i] & 0xFF) == 0x81) {
@@ -137,27 +137,52 @@ public class CWManager {
 		//初始开始时间和文件名
 		if (!beginWrite) {
 			beginWrite = true;
+			dataLength = 0;
+			changeFileNameBetweenTime = 0;
 			beginTime = Tools.getCurrentSecond();
 			fileName = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + ".wav";
+			fileTemp = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + "_temp.wav";
 		}
 		
 		currentTime = Tools.getCurrentSecond();
 		long betweenTime = currentTime - beginTime;
 		
-		if (betweenTime % fileTime == 0) {
-			fileName = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + ".wav";
-		}
-		
+		//存储时间到达总时间 退出
 		if (betweenTime >= totalTime) {
+			writeWaveHeadToFile();
 			Tools.writeToFileEnd();
-			
-			System.out.println("截取音频结束");
+			Tools.mvSrcFileToDestFile(fileTemp, fileName);
+
+			System.out.println("《截取音频结束》\n");
 			System.exit(0);
 		}
 		
-		for (int i = startPos; i < stcp.length; i++) {
-			Tools.writeToFile(fileName, Integer.toHexString(stcp[i] & 0xFF));
+		//存储时间到达单个文件时间，则 修改文件名以便存另一个文件，然后 写入wave头
+		if (betweenTime != changeFileNameBetweenTime && betweenTime % fileTime == 0) {
+			changeFileNameBetweenTime = betweenTime;
+			
+			writeWaveHeadToFile();
+			Tools.mvSrcFileToDestFile(fileTemp, fileName);
+			
+			fileName = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + ".wav";
+			fileTemp = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + "_temp.wav";
+			dataLength = 0;
 		}
+		
+		dataLength += stcp.length - startPos;
+		Tools.writeToFile(fileTemp, stcp, startPos);
+	}
+	
+	/** 
+	 * @Method: writeWaveHeadToFile 
+	 * @Description: 写wave头
+	 * void
+	 */ 
+	private void writeWaveHeadToFile(){
+		int sample = Integer.parseInt(Tools.getProperty("wave.samples_per_sec")) ;
+		byte[] head = WaveHeader.getHeader(dataLength, sample);
+	
+		Tools.writeToFile(fileName, head, 0);
 	}
 	
 	/////////////////////////// 外部接口 ///////////////////////////////////
@@ -178,8 +203,12 @@ public class CWManager {
 	 * @param time 单文件时长(单位 秒)
 	 * @param totalTime 总时长(单位 秒)
 	 * void
+	 * @throws Exception 
 	 */ 
-	public void contorlAndGetData(final String frequence, final String savePath, int fileTime, int totalTime){
+	public void contorlAndGetData(final String frequence, final String savePath, int fileTime, int totalTime) throws Exception{
+		if (fileTime > totalTime) {
+			throw new Exception("总时常需大于单文件时常");
+		}
 		this.frequence = frequence;
 		this.savePath = savePath;
 		this.fileTime = fileTime;

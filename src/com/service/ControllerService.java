@@ -22,7 +22,7 @@ import com.util.Tools;
  */
 public class ControllerService implements Runnable {
 
-	private Socket tcpSocket = null;
+	private static Socket tcpSocket = null;
 	private DatagramSocket udpSocket = null;
 	
 	private static ControllerListener controllerListener;
@@ -42,9 +42,7 @@ public class ControllerService implements Runnable {
 		OTHER//其它
 	}
 	
-	public ControllerService(Socket socket) throws SocketException{
-		this.tcpSocket = socket;
-		
+	public ControllerService() throws SocketException{
 		udpSocket = new DatagramSocket(Config.CONTROLLER_UDP_PORT);
 		controllerBuffer = new ControllerBuffer();
 	}
@@ -220,14 +218,16 @@ public class ControllerService implements Runnable {
         ServerSocket server;
 		try {
 			server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
+			ControllerService controllerService = new ControllerService();
+			
 			Socket receiver = null;  
 			boolean f = true;  
 			while(f){  
 				//等待客户端的连接，如果没有获取连接  
-				receiver = server.accept();  
+				receiver = server.accept(); 
+				tcpSocket = receiver;
 				System.out.println("与客户端连接成功！");  
 				//为每个客户端连接开启一个线程  
-				ControllerService controllerService = new ControllerService(receiver);
 				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
 				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
 				
