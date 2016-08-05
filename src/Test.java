@@ -7,5 +7,4 @@ public class Test {
 		// TODO Auto-generated method stub  
 		CWManager.getInstance().contorlAndGetData("07600000", "D://", 60, 60);
 	}
-
 }
