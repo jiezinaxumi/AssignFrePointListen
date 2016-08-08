@@ -13,8 +13,12 @@ import java.util.Date;
 import java.util.Properties;
 
 public class Tools {
+	public static Tools getTools(){
+		return new Tools();
+	}
+	
 	// 将指定byte数组以16进制的形式打印到控制台
-	public static void printHexString(final byte[] b) {
+	public void printHexString(final byte[] b) {
 		printHexString(b, b.length);
 	}
 	
@@ -25,26 +29,27 @@ public class Tools {
      * @param length
      * void
      */ 
-    public static void printHexString(final byte[] b, int length){
-    	printBufferType(b);
+    public void printHexString(final byte[] b, int length){
+    	String msg = getBufferType(b);
     	
     	for (int i = 0; i < length; i++) {
 			String hex = Integer.toHexString(b[i] & 0xFF);
 			if (hex.length() == 1) {
 				hex = '0' + hex;
 			}
-			System.out.print("[" + i + "]" + hex.toUpperCase() +  " ");
+			msg += "[" + i + "]" + hex.toUpperCase() +  " ";
 		}
-		System.out.println("\n");
+		System.out.println(msg + "\n");
 	}
     
     /** 
-     * @Method: printBufferType 
-     * @Description: 打印报文类型，STCP除外
+     * @Method: getBufferType 
+     * @Description: 取报文类型，STCP除外
      * @param b
-     * void
+     * return 返回报文类型
+     * String
      */  
-    public static void printBufferType(final byte[] b){
+    public String getBufferType(final byte[] b){
     	String bufferType = null;
     	switch (b[0] & 0xff) {
 		case 0x00:
@@ -68,7 +73,7 @@ public class Tools {
 		default:
 			break;
 		}
-    	System.out.print(bufferType);
+    	return bufferType;
     }
     
     /** 
@@ -77,31 +82,31 @@ public class Tools {
      * @param buffer
      * void
      */ 
-    public static void printSTCP(byte[] buffer){
-    	System.out.print("STCP控制块： ");
+    public void printSTCP(byte[] buffer){
+    	String msg = "STCP控制块： ";
     	for (int i = 0, j = 0; i < buffer.length; i++, j ++) {
     		String hex = Integer.toHexString(buffer[i] & 0xFF);
 			if (hex.length() == 1) {
 				hex = '0' + hex;
 			}
 			if((buffer[i] & 0xFF) == 0x7E){
-				System.out.print("\n参数块： ");
+				msg += "\n参数块： ";
 				j = 0;
 			}else if((buffer[i] & 0xFF) == 0x81){
-				System.out.print("\n数据块： ");
+				msg += "\n数据块： ";
 				j = 0;
 			}
 			
 			//将参数区以字符的形式打印
 			if (j >= 5 && (buffer[i - j] & 0xFF) == 0x7E ) {
 				if (j == 5) {
-					System.out.print("参数区 ");
+					msg += "参数区  ";
 				}
 				if (((buffer[i - j + 1] & 0xFF) == 0x16 && (buffer[i - j + 2] & 0xFF) == 0x0F) || ((buffer[i - j + 1] & 0xFF) == 0x16 && (buffer[i - j + 2] & 0xFF) == 0x8F)) {
 					byte[] b = new byte[1];
 					b[0] = buffer[i];
 					try {
-						System.out.print((b[0] & 0xFF) >= 0x80 ? hex.toUpperCase() : new String(b, "UTF-8"));
+						msg += (b[0] & 0xFF) >= 0x80 ? hex.toUpperCase() : new String(b, "UTF-8");
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -110,10 +115,10 @@ public class Tools {
 				}
 			}
 			
-//			System.out.print("[" + j + "]" + hex.toUpperCase() +  " ");
-			System.out.print("[" + j + "]" + buffer[i] +  " ");
+			msg += "[" + j + "]" + hex.toUpperCase() +  " ";
+//			msg += "[" + j + "]" + buffer[i] +  " ";
 		}
-    	System.out.println("\n");
+    	System.out.println(msg + "\n");
     }
     
     /** 
@@ -122,7 +127,7 @@ public class Tools {
      * @return
      * String
      */ 
-    public static String getLocalIP(){
+    public String getLocalIP(){
 		String ip = null;
 		try {
 			ip = InetAddress.getLocalHost().getHostAddress();
@@ -134,8 +139,8 @@ public class Tools {
 		return ip;
 	}
     
-    static FileOutputStream fw = null;
-    static String filePath = null;
+    private FileOutputStream fw = null;
+    private String filePath = null;
     /** 
      * @Method: writeToFile 
      * @Description: 写数据到文件
@@ -144,7 +149,7 @@ public class Tools {
      * @param startPos 数据起始位子 结束位置到文件末尾
      * void
      */ 
-    public static void writeToFile(final String path, byte[] content, int startPos){
+    public void writeToFile(final String path, byte[] content, int startPos){
     	//是新文件 如果fw不为空 说明已写过文件 则flush到文件然后close， 然后重新new一个
     	if (!path.equals(filePath)) {
     		if (fw != null) {
@@ -187,7 +192,7 @@ public class Tools {
      * @Description: 写数据结束时调用 
      * void
      */ 
-    public static void writeToFileEnd(){
+    public void writeToFileEnd(){
     	if (fw != null) {
 			try {
 				fw.flush();
@@ -212,7 +217,7 @@ public class Tools {
      * @param destFileName 目标文件（绝对路径加文件名）
      * void
      */ 
-    public static void mvSrcFileToDestFile(final String srcFileName, final String destFileName){
+    public void mvSrcFileToDestFile(final String srcFileName, final String destFileName){
     	File file = new File(srcFileName);
     	try {
 			FileInputStream is = new FileInputStream(file);
@@ -236,17 +241,17 @@ public class Tools {
 		}
     }
     
-    static SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
-    public static String getCurrentTime(){
+    private SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
+    public String getCurrentTime(){
     	return df.format(new Date());
     }
     
-    public static long getCurrentSecond(){
+    public long getCurrentSecond(){
     	return new Date().getTime() / 1000;
     }
     
     //读取properties文件
-	public static String getProperty(String key) {
+	public String getProperty(String key) {
 		String value = null;
 		Properties pps = new Properties();
 		try {
@@ -257,9 +262,5 @@ public class Tools {
 			e.printStackTrace();
 		}
 		return value;
-	}
-    
-    public static void main(String[] args) {
-		mvSrcFileToDestFile("D:\\haha.wav", "D:\\haha1.wav");
 	}
 }

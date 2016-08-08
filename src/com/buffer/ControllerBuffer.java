@@ -9,6 +9,7 @@ import com.util.Tools;
  * 2016年7月28日
  */
 public class ControllerBuffer extends Buffer {
+	private Tools tools = Tools.getTools();
 	private byte[] makeSureBuffer  = new byte[10]; //确认报
 	private byte[] distributionBuffer  = new byte[34]; //分配报
 	
@@ -50,12 +51,12 @@ public class ControllerBuffer extends Buffer {
 		distributionBuffer[31] = 0x00;
 		
 		//分配报中工作站IP
-		byte[] workstationIp = Tools.getLocalIP().getBytes();
+		byte[] workstationIp = tools.getLocalIP().getBytes();
 		System.arraycopy(workstationIp, 0, distributionBuffer, 15, workstationIp.length);
 		
-		//分配报中工作站的STCP端口号
-		distributionBuffer[32] = (byte) (Config.WORKSTATION_UDP_PORT & 0x00FF);
-		distributionBuffer[33] = (byte) (Config.WORKSTATION_UDP_PORT >> 8 & 0xFF);			
+//		//分配报中工作站的STCP端口号
+//		distributionBuffer[32] = (byte) (Config.WORKSTATION_UDP_PORT & 0x00FF);
+//		distributionBuffer[33] = (byte) (Config.WORKSTATION_UDP_PORT >> 8 & 0xFF);			
 	}
 	
 	/** 
@@ -84,5 +85,9 @@ public class ControllerBuffer extends Buffer {
 		distributionBuffer[6] = applyBuffer[6];
 		distributionBuffer[7] = applyBuffer[7];
 		distributionBuffer[8] = applyBuffer[8];
+		
+		//分配报中工作站的STCP端口号
+		distributionBuffer[32] = applyBuffer[32];
+		distributionBuffer[33] = applyBuffer[33];	
 	}
 }

@@ -21,20 +21,31 @@ import com.util.Tools;
  * 2016年7月28日
  */
 public class ControllerService implements Runnable {
+	private static ControllerService controllerService = null;
 
-	private static Socket tcpSocket = null;
-	private DatagramSocket udpSocket = null;
+	private static DatagramSocket udpSocket = null;
+	private static ServerSocket server = null;
+	private Socket tcpSocket = null;
 	
-	private static ControllerListener controllerListener;
+	private ControllerListener controllerListener =  null;
 	private ControllerBuffer controllerBuffer;
+	private Tools tools;
 
-	private final static String LISTEN_RECEIVER = "listenReceiver";
-	private final static String LISTENE_WORKSTATION = "listeneWorkstation";
+	public final static String LISTEN_RECEIVER = "listenReceiver";
+	public final static String LISTENE_WORKSTATION = "listeneWorkstation";
 	
-	
+	static{
+		try {
+			udpSocket = new DatagramSocket(Config.CONTROLLER_UDP_PORT);
+//			server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	//收到的报文类型
-	private enum ReceivedBufferType{
+	private static enum ReceivedBufferType{
 		REGISTER,//登记报
 		REPORT,//汇报报
 		DETECT,//探测报
@@ -42,9 +53,12 @@ public class ControllerService implements Runnable {
 		OTHER//其它
 	}
 	
-	public ControllerService() throws SocketException{
-		udpSocket = new DatagramSocket(Config.CONTROLLER_UDP_PORT);
+	public ControllerService(){};
+	
+	public ControllerService(Socket socket) throws IOException{
+		tcpSocket = socket;
 		controllerBuffer = new ControllerBuffer();
+		tools = Tools.getTools();
 	}
 	
 	/**
@@ -62,7 +76,6 @@ public class ControllerService implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 	/**
 	 * @Method: judgeBufferType 
@@ -96,7 +109,7 @@ public class ControllerService implements Runnable {
 		controllerBuffer.initMakeSureBufferByRegisterBuffer(registerBuffer);
 		
 		//打印
-		Tools.printHexString(controllerBuffer.getMakeSureBuffer());
+		tools.printHexString(controllerBuffer.getMakeSureBuffer());
 		
 		sendBuffer(controllerBuffer.getMakeSureBuffer());
 	}
@@ -111,7 +124,7 @@ public class ControllerService implements Runnable {
 		controllerBuffer.initDistributionBufferByApplyBuffer(applyBuffer);
 		
 		//打印
-		Tools.printHexString(controllerBuffer.getDistributionBuffer());
+		tools.printHexString(controllerBuffer.getDistributionBuffer());
 		
 		sendBuffer(controllerBuffer.getDistributionBuffer());
 	}
@@ -132,7 +145,7 @@ public class ControllerService implements Runnable {
 				int length = is.read(buffer);
 				
 				//输出
-				Tools.printHexString(buffer, length);
+				tools.printHexString(buffer, length);
 				
 				//判断报文类型（登记报还是汇报报等）
 				ReceivedBufferType type = judgeBufferType(buffer);
@@ -144,7 +157,9 @@ public class ControllerService implements Runnable {
 				case DETECT://探测报
 					break;
 				case REPORT://汇报报 
-					controllerListener.onReceivedReportMsg(buffer);
+					if (controllerListener != null) {
+						controllerListener.onReceivedReportMsg(buffer);
+					}
 					break;
 				default:
 					break;
@@ -162,13 +177,18 @@ public class ControllerService implements Runnable {
 	 * @Description: 监听工作站
 	 * void
 	 */ 
-	public void listeneWorkstation() throws IOException{
+	public void listeneWorkstation(){
 		byte[] buffer = new byte[1024];
 		DatagramPacket dpReceived = new DatagramPacket(buffer, 1024);
 		
 		boolean f = true;
 		while(f){
-			udpSocket.receive(dpReceived);//接受来自工作站的数据
+			try {
+				udpSocket.receive(dpReceived);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}//接受来自工作站的数据
 			byte[] receivedBuffer = Arrays.copyOfRange(dpReceived.getData(), dpReceived.getOffset(), 
 					dpReceived.getOffset() + dpReceived.getLength()); 
 			
@@ -177,9 +197,8 @@ public class ControllerService implements Runnable {
 			//根据报文类型 发送对应的信息
 			switch (type) {
 			case APPLY://申请报
-				System.out.print("收到");
 				//打印
-				Tools.printHexString(receivedBuffer);
+				tools.printHexString(receivedBuffer);
 
 				sendDistributionBuffer(receivedBuffer);
 				break;
@@ -198,40 +217,36 @@ public class ControllerService implements Runnable {
 		if (Thread.currentThread().getName().equals(LISTEN_RECEIVER)) {
 			listenReveiver();
 		}else{
-			try {
-				listeneWorkstation();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			listeneWorkstation();
 		}
 		
 	}
+	
+	///////////////////////// 外部接口 //////////////////////////////
 
 	/** 
 	 * @Method: start 
 	 * @Description: 开启服务（控制器）
 	 * void
 	 */ 
-	public static void start(){
-		//服务端在5770端口监听客户端请求的TCP连接  
-        ServerSocket server;
+	public void start(){
 		try {
-			server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
-			ControllerService controllerService = new ControllerService();
-			
 			Socket receiver = null;  
 			boolean f = true;  
-			while(f){  
+			int n = 0;
+			while(f && n < 3){  
 				//等待客户端的连接，如果没有获取连接  
 				receiver = server.accept(); 
-				tcpSocket = receiver;
-				System.out.println("与客户端连接成功！");  
+				ControllerService controllerService = new ControllerService(receiver);
+				controllerService.setControllerListener(controllerListener);
+				
+				System.out.println("搜索到接收机！");  
 				//为每个客户端连接开启一个线程  
 				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
 				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
 				
-				f = false;
+				n++;
+//				f = false;
 			}  
 			server.close();  
 		} catch (IOException e) {
@@ -246,7 +261,15 @@ public class ControllerService implements Runnable {
 	 * @param listener
 	 * void
 	 */ 
-	public static  void setControllerListener(ControllerListener listener){
+	public void setControllerListener(ControllerListener listener){
 		controllerListener = listener;
+	}
+	
+	public static ControllerService getInstance(){
+		if (controllerService == null) {
+			controllerService = new ControllerService();
+		}
+		
+		return controllerService;
 	}
 }

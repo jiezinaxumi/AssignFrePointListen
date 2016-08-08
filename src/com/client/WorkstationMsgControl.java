@@ -18,8 +18,8 @@ import com.util.Tools;
  *
  * 2016年7月28日
  */
-public class Workstation implements Runnable{
-	private DatagramSocket datagramSocket;
+public class WorkstationMsgControl implements Runnable{
+	private static DatagramSocket datagramSocket;
     private WorkstationBuffer workstationBuffer;
     
     private Tools tools;
@@ -28,19 +28,18 @@ public class Workstation implements Runnable{
     
     private final int MAX_RECEIVE_BUFFER = 65508;
     
-    public Workstation(int port){
+    static{
     	try {
-    		System.out.println("端口 " + port);
-
-			datagramSocket = new DatagramSocket(port);
+			datagramSocket = new DatagramSocket(Config.WORKSTATION_UDP_PORT);
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    }
+    
+    public WorkstationMsgControl(){
     	tools = Tools.getTools();
     	workstationBuffer = new WorkstationBuffer();
-    	workstationBuffer.initBuffer();
-    	workstationBuffer.setPort(port);
     }
      
     public void setWorkstationListener(WorkstationListener workstationListener) {
@@ -55,6 +54,7 @@ public class Workstation implements Runnable{
      */ 
     public void setFrequennce(final String frequence){
     	workstationBuffer.setFrequence(frequence);
+    	workstationBuffer.initBuffer();
     }
 
 	/** 

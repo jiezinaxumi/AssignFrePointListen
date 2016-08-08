@@ -16,12 +16,34 @@ public class WorkstationBuffer extends Buffer {
 	private byte[] stcpArgsBuffer = new byte[MAX_SIZE]; //stcp参数块
 	private byte[] stcpBuffer;
 	
-	private String frequence = null; //射频
+	private int stcpSize = 0; //报文长度
 	
-	int stcpSize = 0; //报文长度
+	private Tools tools = Tools.getTools();
 	
+	//设置接受机的频段
 	public void setFrequence(final String frequence) {
-		this.frequence = frequence;
+		// 参数区
+		String args = "";
+		if (frequence != null) {
+			args += "F" + frequence;
+		}
+		args += "M01" + "DAT" + Integer.toHexString(Config.RETURN_TYPE)
+				+ "LEN1024"; // 设置射频和返回的数据类型
+		byte[] argsBuffer = args.getBytes();
+		int argsSize = argsBuffer.length;
+
+		stcpArgsBuffer[3] = (byte) (argsSize & 0xFF);
+		stcpArgsBuffer[4] = (byte) (argsSize >> 8 & 0xFF);
+
+		// 添加参数
+		System.arraycopy(argsBuffer, 0, stcpArgsBuffer, 5, argsSize);
+
+		stcpSize = argsSize + 5 + 16; // 报文长度 = 参数 区 + 参数块（5字节）+ 控制块（16字节）
+	}
+
+	public void setPort(int port){
+		applyBuffer[32] = (byte) (port & 0x00FF);
+		applyBuffer[33] = (byte) (port >> 8 & 0xFF);
 	}
 
 	/** 
@@ -86,13 +108,11 @@ public class WorkstationBuffer extends Buffer {
 		applyBuffer[14] = 0x00;		
 		applyBuffer[30] = 0x08;
 		applyBuffer[31] = 0x00;
-		applyBuffer[32] = (byte) (Config.WORKSTATION_UDP_PORT & 0x00FF);
-		applyBuffer[33] = (byte) (Config.WORKSTATION_UDP_PORT >> 8 & 0xFF);
 		applyBuffer[34] = 0x20;
 		applyBuffer[35] = 0x00;
 		
 		//ip
-		byte[] ip = Tools.getLocalIP().getBytes();
+		byte[] ip = tools.getLocalIP().getBytes();
 		System.arraycopy(ip, 0, applyBuffer, 15, ip.length);
 		
 		//申请口令
@@ -103,23 +123,6 @@ public class WorkstationBuffer extends Buffer {
 		stcpArgsBuffer[0] = 0x7E;
 		stcpArgsBuffer[1] = 0x16;
 		stcpArgsBuffer[2] = (byte)0x8F;
-		
-		//参数区
-		String args = "";
-		if (frequence != null) {
-			args += "F" + frequence;
-		}
-		args +="M01"+"DAT" + Integer.toHexString(Config.RETURN_TYPE) + "LEN1024";  //设置射频和返回的数据类型
-		byte[] argsBuffer = args.getBytes();
-		int argsSize = argsBuffer.length;
-				
-		stcpArgsBuffer[3] = (byte) (argsSize & 0xFF);
-		stcpArgsBuffer[4] = (byte) (argsSize >> 8 & 0xFF);
-		
-		//添加参数
-		System.arraycopy(argsBuffer, 0, stcpArgsBuffer, 5, argsSize);
-		
-		stcpSize = argsSize + 5 + 16; //报文长度 = 参数 区 + 参数块（5字节）+ 控制块（16字节）
 	}
 	
 	/** 

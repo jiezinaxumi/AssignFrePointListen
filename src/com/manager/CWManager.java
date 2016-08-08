@@ -1,10 +1,15 @@
 package com.manager;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 import com.buffer.WaveHeader;
 import com.client.Workstation;
 import com.listener.ControllerListener;
 import com.listener.WorkstationListener;
 import com.service.ControllerService;
+import com.util.Config;
 import com.util.Tools;
 
 /**
@@ -15,6 +20,7 @@ import com.util.Tools;
  */
 public class CWManager {
 	private static CWManager cwManager = null;
+	private Tools tools = Tools.getTools();
 	private String frequence;
 	private String savePath;
 	private String fileName;
@@ -31,100 +37,236 @@ public class CWManager {
 	
 	boolean beginWrite = false; // 开始写文件
 	
-	private void run(){
-		//配置工作站
-		final Workstation workstation = new Workstation();
-		
-		workstation.setFrequennce(frequence); //设置接收机频率
-		
-		workstation.setWorkstationListener(new WorkstationListener() {
-			boolean isConfirm = false; // 已发送接受确认
-			boolean isControlReceiver = false; //已发送调频指令
-			boolean isSucces = false;  //调频是否成功
-			
-			@Override
-			public void onReveicedSTCP(byte[] stcp, String ip, int port) {
-				// TODO Auto-generated method stub
-//				Tools.printSTCP(stcp);
+	private void r(){
+		try {
+			ServerSocket server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
+			Socket receiver = null;  
+			boolean f = true;  
+			int n = 1;
+			while(f && n <= 3){  
+				//等待客户端的连接，如果没有获取连接  
+				receiver = server.accept(); 
+				ControllerService controllerService = new ControllerService(receiver);
 				
-				//发送调频信息
-				if (!isControlReceiver && isConfirm) {
-					System.out.println("控制接收机 调频 " + frequence);
-					workstation.sendSTCPBufferByReceivedBuffer(stcp, ip, port);
-					isControlReceiver = true;
-				}
-				
-				//发送接受确认信息
-				workstation.sendConfirmSTCPBufferByReceivedBuffer(stcp, ip, port);
-				isConfirm = true;
-				
-				//判断调频是否成功
-				if (isControlReceiver && !isSucces) {
-					byte[] frequenceBety = frequence.getBytes();
-					for (int i = 0, j = 0; i < stcp.length; i++) {
-						if (stcp[i] == frequenceBety[j]) {
-							j++;
-							if (j == frequence.length()) {
-								System.out.println("《调频成功》\n");
-								isSucces = true;
-								break;
-							}
-						}else{
-							if (j != 0) {
-								j = 0;
-								i--;
+				//一个接收机对应一个工作站 所以当搜索到一个接收机是new一个工作站
+				final Workstation workstation = new Workstation(Config.WORKSTATION_UDP_PORT + n);
+				workstation.setFrequennce(frequence); //设置接收机频率
+				//注册工作站的监听事件
+				workstation.setWorkstationListener(new WorkstationListener() {
+					boolean isConfirm = false; // 已发送接受确认
+					boolean isControlReceiver = false; //已发送调频指令
+					boolean isSucces = false;  //调频是否成功
+					
+					@Override
+					public void onReveicedSTCP(byte[] stcp, String ip, int port) {
+						// TODO Auto-generated method stub
+						tools.printSTCP(stcp);
+						
+						//发送调频信息
+						if (!isControlReceiver && isConfirm) {
+							System.out.println("接受机端口号" + port);
+							System.out.println("控制接收机 调频 " + frequence);
+							workstation.sendSTCPBufferByReceivedBuffer(stcp, ip, port);
+							isControlReceiver = true;
+							return;
+						}
+						
+						//发送接受确认信息
+						workstation.sendConfirmSTCPBufferByReceivedBuffer(stcp, ip, port);
+						isConfirm = true;
+						
+						//判断调频是否成功
+						if (isControlReceiver && !isSucces) {
+							byte[] frequenceBety = frequence.getBytes();
+							for (int i = 0, j = 0; i < stcp.length; i++) {
+								if (stcp[i] == frequenceBety[j]) {
+									j++;
+									if (j == frequence.length()) {
+										System.out.println("《调频成功》\n");
+										isSucces = true;
+										break;
+									}
+								}else{
+									if (j != 0) {
+										j = 0;
+										i--;
+									}
+								}
 							}
 						}
+						
+						//存储调频后的数据区
+						if (isSucces) {
+							int i = 15;
+							//查找数据区的起始位置
+							for (; i < stcp.length; i++) {
+								if ((stcp[i] & 0xFF) == 0x81) {
+									i += 4;
+									break;
+								}
+							}
+							//写文件
+							writeDataToFile(stcp, i);
+						}
 					}
-				}
+				});
+				workstation.start();
+				//-----
 				
-				//存储调频后的数据区
-				if (isSucces) {
-					int i = 15;
-					//查找数据区的起始位置
-					for (; i < stcp.length; i++) {
-						if ((stcp[i] & 0xFF) == 0x81) {
-							i += 4;
+				
+				//注册控制器的监听事件
+				controllerService.setControllerListener(new ControllerListener() {
+	
+					@Override
+					public void onReceivedReportMsg(byte[] reportBuffer) {
+						// TODO Auto-generated method stub
+
+						// TODO Auto-generated method stub
+						if ((reportBuffer[99] & 0xFF) == 0x00 && (reportBuffer[100] & 0xFF) == 0x00) { //收到汇报报 通知工作站发送申请报
+							System.out.println("《发送申请报》");
+							workstation.sendApplyMessageByReportBuffer(reportBuffer);
+							return;
+						}
+						switch (reportBuffer[76] & 0xFF) {
+						case 0x00:
+							System.out.println("\n《接收机空闲，虚连接建立失败》\n");
+							break;
+						case 0x01:
+							System.out.println("\n《锁闭 已分配但还未建立虚连接》\n");
+							break;
+						case 0x02:
+							System.out.println("\n《使用》\n");
+							break;
+
+						default:
 							break;
 						}
+					
+						
 					}
-					//写文件
-					writeDataToFile(stcp, i);
-				}
-			}
-		});
+				});
+				
+				System.out.println("搜索到接收机！");  
+				//为控制器开启监听接收机和监听工作站的线程
+				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
+				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
+				
+				n++;
+//				f = false;
+			}  
+			server.close();  
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  
 		
-		
-		//配置接收机
-		ControllerService.setControllerListener(new ControllerListener() {
-			
-		    @Override
-			public void onReceivedReportMsg(byte[] reportBuffer) {
-				// TODO Auto-generated method stub
-				if ((reportBuffer[99] & 0xFF) == 0x00 && (reportBuffer[100] & 0xFF) == 0x00) {
-					workstation.sendApplyMessageByReportBuffer(reportBuffer);
-					return;
-				}
-				switch (reportBuffer[76] & 0xFF) {
-				case 0x00:
-					System.out.println("\n《接收机空闲，虚连接建立失败》\n");
-					break;
-				case 0x01:
-					System.out.println("\n《锁闭 已分配但还未建立虚连接》\n");
-					break;
-				case 0x02:
-					System.out.println("\n《使用》\n");
-					break;
-
-				default:
-					break;
-				}
-			}
-		});
-		
-		ControllerService.start();
-		workstation.start();
 	}
+	
+	
+	
+	
+	
+//	private void run(){
+//		
+//		
+//		
+//		//配置接收机
+//		ControllerService.getInstance().setControllerListener(new ControllerListener() {
+//		    @Override
+//			public void onReceivedReportMsg(byte[] reportBuffer) {
+//				// TODO Auto-generated method stub
+//				if ((reportBuffer[99] & 0xFF) == 0x00 && (reportBuffer[100] & 0xFF) == 0x00) {
+//					System.out.println("《接收机发送申请报》");
+//					
+//					//-----
+//					//配置工作站
+//					final Workstation workstation = new Workstation();
+//					
+//					System.out.println(workstation);
+//					
+//					workstation.setFrequennce(frequence); //设置接收机频率
+//					
+//					workstation.setWorkstationListener(new WorkstationListener() {
+//						boolean isConfirm = false; // 已发送接受确认
+//						boolean isControlReceiver = false; //已发送调频指令
+//						boolean isSucces = false;  //调频是否成功
+//						
+//						@Override
+//						public void onReveicedSTCP(byte[] stcp, String ip, int port) {
+//							// TODO Auto-generated method stub
+////							Tools.printSTCP(stcp);
+//							
+//							//发送调频信息
+//							if (!isControlReceiver && isConfirm) {
+//								System.out.println(workstation + "控制接收机 调频 " + frequence);
+//								workstation.sendSTCPBufferByReceivedBuffer(stcp, ip, port);
+//								isControlReceiver = true;
+//							}
+//							
+//							//发送接受确认信息
+//							workstation.sendConfirmSTCPBufferByReceivedBuffer(stcp, ip, port);
+//							isConfirm = true;
+//							
+//							//判断调频是否成功
+//							if (isControlReceiver && !isSucces) {
+//								byte[] frequenceBety = frequence.getBytes();
+//								for (int i = 0, j = 0; i < stcp.length; i++) {
+//									if (stcp[i] == frequenceBety[j]) {
+//										j++;
+//										if (j == frequence.length()) {
+//											System.out.println("《调频成功》\n");
+//											isSucces = true;
+//											break;
+//										}
+//									}else{
+//										if (j != 0) {
+//											j = 0;
+//											i--;
+//										}
+//									}
+//								}
+//							}
+//							
+//							//存储调频后的数据区
+//							if (isSucces) {
+//								int i = 15;
+//								//查找数据区的起始位置
+//								for (; i < stcp.length; i++) {
+//									if ((stcp[i] & 0xFF) == 0x81) {
+//										i += 4;
+//										break;
+//									}
+//								}
+//								//写文件
+//								writeDataToFile(stcp, i);
+//							}
+//						}
+//					});
+//					workstation.start();
+//					//-----
+//					
+//					workstation.sendApplyMessageByReportBuffer(reportBuffer);
+//					return;
+//				}
+//				switch (reportBuffer[76] & 0xFF) {
+//				case 0x00:
+//					System.out.println("\n《接收机空闲，虚连接建立失败》\n");
+//					break;
+//				case 0x01:
+//					System.out.println("\n《锁闭 已分配但还未建立虚连接》\n");
+//					break;
+//				case 0x02:
+//					System.out.println("\n《使用》\n");
+//					break;
+//
+//				default:
+//					break;
+//				}
+//			}
+//		});
+//		
+//		ControllerService.getInstance().start();
+//	}
 	
 	/** 
 	 * @Method: writeDataToFile 
@@ -139,19 +281,19 @@ public class CWManager {
 			beginWrite = true;
 			dataLength = 0;
 			changeFileNameBetweenTime = 0;
-			beginTime = Tools.getCurrentSecond();
-			fileName = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + ".wav";
-			fileTemp = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + "_temp.wav";
+			beginTime = tools.getCurrentSecond();
+			fileName = savePath + "record_" + frequence + "_" + tools.getCurrentTime() + ".wav";
+			fileTemp = savePath + "record_" + frequence + "_" + tools.getCurrentTime() + "_temp.wav";
 		}
 		
-		currentTime = Tools.getCurrentSecond();
+		currentTime = tools.getCurrentSecond();
 		long betweenTime = currentTime - beginTime;
 		
 		//存储时间到达总时间 退出
 		if (betweenTime >= totalTime) {
 			writeWaveHeadToFile();
-			Tools.writeToFileEnd();
-			Tools.mvSrcFileToDestFile(fileTemp, fileName);
+			tools.writeToFileEnd();
+			tools.mvSrcFileToDestFile(fileTemp, fileName);
 
 			System.out.println("《截取音频结束》\n");
 			System.exit(0);
@@ -162,15 +304,15 @@ public class CWManager {
 			changeFileNameBetweenTime = betweenTime;
 			
 			writeWaveHeadToFile();
-			Tools.mvSrcFileToDestFile(fileTemp, fileName);
+			tools.mvSrcFileToDestFile(fileTemp, fileName);
 			
-			fileName = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + ".wav";
-			fileTemp = savePath + "record_" + frequence + "_" + Tools.getCurrentTime() + "_temp.wav";
+			fileName = savePath + "record_" + frequence + "_" + tools.getCurrentTime() + ".wav";
+			fileTemp = savePath + "record_" + frequence + "_" + tools.getCurrentTime() + "_temp.wav";
 			dataLength = 0;
 		}
 		
 		dataLength += stcp.length - startPos;
-		Tools.writeToFile(fileTemp, stcp, startPos);
+		tools.writeToFile(fileTemp, stcp, startPos);
 	}
 	
 	/** 
@@ -179,10 +321,10 @@ public class CWManager {
 	 * void
 	 */ 
 	private void writeWaveHeadToFile(){
-		int sample = Integer.parseInt(Tools.getProperty("wave.samples_per_sec")) ;
+		int sample = Integer.parseInt(tools.getProperty("wave.samples_per_sec")) ;
 		byte[] head = WaveHeader.getHeader(dataLength, sample);
 	
-		Tools.writeToFile(fileName, head, 0);
+		tools.writeToFile(fileName, head, 0);
 	}
 	
 	/////////////////////////// 外部接口 ///////////////////////////////////
@@ -215,7 +357,8 @@ public class CWManager {
 		this.totalTime = totalTime;
 		
 		
-		run();
+//		run();
+		r();
 	}
 
 }

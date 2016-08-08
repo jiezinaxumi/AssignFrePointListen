@@ -11,7 +11,7 @@ public class Config {
 	
 	public static final int CONTROLLER_TCP_PORT = 5770;
 	public static final int CONTROLLER_UDP_PORT = 5772;
-	public static final int WORKSTATION_UDP_PORT = 5771;
+	public static int WORKSTATION_UDP_PORT = 5773;
 	
 	public static final String APPLAY_PWD = "abcdeabcdeabcdea"; //申请口令 16个数字，英文字符
 	
