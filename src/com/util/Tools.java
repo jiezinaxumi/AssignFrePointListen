@@ -31,6 +31,9 @@ public class Tools {
      */ 
     public void printHexString(final byte[] b, int length){
     	String msg = getBufferType(b);
+    	if (msg.equals("线路探测报： ")) {
+			return;
+		}
     	
     	for (int i = 0; i < length; i++) {
 			String hex = Integer.toHexString(b[i] & 0xFF);
@@ -150,6 +153,11 @@ public class Tools {
      * void
      */ 
     public void writeToFile(final String path, byte[] content, int startPos){
+		File file = new File(path);
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+		}
+    	
     	//是新文件 如果fw不为空 说明已写过文件 则flush到文件然后close， 然后重新new一个
     	if (!path.equals(filePath)) {
     		if (fw != null) {
@@ -200,12 +208,12 @@ public class Tools {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}finally{
-				try {
-					fw.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					fw.close();
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 			}
 		}
     }
@@ -246,6 +254,11 @@ public class Tools {
     	return df.format(new Date());
     }
     
+    private SimpleDateFormat df2 = new SimpleDateFormat("yyyy-MM-dd");//设置日期格式
+    public String getCurrentDay(){
+    	return df2.format(new Date());
+    }
+    
     public long getCurrentSecond(){
     	return new Date().getTime() / 1000;
     }
@@ -262,5 +275,15 @@ public class Tools {
 			e.printStackTrace();
 		}
 		return value;
+	}
+	
+	public static void main(String[] args) {
+		String path = "D:\\newdata4\\1.wav";
+		File file = new File(path);
+  	  if (!file.getParentFile().exists()) {
+  	   file.getParentFile().mkdirs();
+  	  }
+  	  
+		
 	}
 }

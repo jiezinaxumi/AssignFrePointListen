@@ -6,5 +6,12 @@ package com.listener;
  * 2016年8月2日
  */
 public interface WorkstationListener {
-	void onReveicedSTCP(byte[] stcp, String ip, int port);
+	/**
+	 * @Method: onRevivedData 
+	 * @Description: 收到调频后返回的数据
+	 * @param stcp 报文
+	 * @param startPos 数据区的起始位置
+	 * void
+	 */
+	void onRevivedData(byte[] stcp, int startPos);
 }
