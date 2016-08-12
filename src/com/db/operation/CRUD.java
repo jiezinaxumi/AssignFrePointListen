@@ -17,20 +17,13 @@ public class CRUD {
 	private Connection conn = null;
 	private Statement st = null;
 	
-	public CRUD(){
-		try {
-			conn = DBConn.getConn();
-			st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
 	public ResultSet find(String sql){
+		conn = DBConn.getConn();
+		
 		ResultSet rs = null;
 		try {
-			rs =  st.executeQuery(sql);
+			st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+			rs = st.executeQuery(sql);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -40,15 +33,30 @@ public class CRUD {
 	}
 	
 	public void update(String sql){
+		conn = DBConn.getConn();
 		try {
+			st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
 			st.executeUpdate(sql);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally{
+			close();
 		}
 	}
 	
 	public void instert(String sql){
 		update(sql);
+	}
+	
+	public void close(){
+		try {
+			st.close();
+			conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 }

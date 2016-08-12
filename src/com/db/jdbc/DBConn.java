@@ -14,10 +14,6 @@ import com.util.Tools;
 public class DBConn {
 	private static Tools tools = Tools.getTools();
 	private static Connection conn = null;
-//	private final static String DRIVER = "oracle.jdbc.driver.OracleDriver";
-//	private final static String URL = "jdbc:oracle:thin:@192.168.10.105:1521:orcl11g";
-//	private final static String USERNAME = "brps";
-//	private final static String PASSWORD = "brps";
 	
 	private final static String DRIVER = tools.getProperty("db.driver");
 	private final static String URL = tools.getProperty("db.url");
