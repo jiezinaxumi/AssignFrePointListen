@@ -1,5 +1,7 @@
 package com.listener;
 
+import com.client.Workstation;
+
 /**
  * @author Boris
  * @description 
@@ -7,5 +9,5 @@ package com.listener;
  */
 
 public interface ConnectListener {
-	void onConnectEnd();
+	void onConnectEnd(Workstation workstation,String receiverIp, int receiverPort);
 }

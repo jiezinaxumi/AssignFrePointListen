@@ -3,14 +3,12 @@ package com.manager;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Vector;
 
 import com.client.Workstation;
-import com.listener.*;
-import com.pojo.WRRelation;
+import com.listener.ConnectListener;
+import com.listener.ControllerListener;
 import com.service.ControllerService;
 import com.util.Config;
-import com.util.Constance;
 import com.util.Tools;
 
 /**
@@ -20,59 +18,55 @@ import com.util.Tools;
  * 
  * 2016年8月2日
  */
-public class ConnectManager {
-	Vector<WRRelation> wrRelations = null; //存储接收机和工作站的对应关系
-	
+public class ConnectManager implements Runnable{
 	ConnectListener connectListener = null;
+	Tools tools = Tools.getTools();
 	
 	int workStationNum = 0;
-	
-	public ConnectListener getConnectListener() {
-		return connectListener;
-	}
 
 	public void setConnectListener(ConnectListener connectListener) {
 		this.connectListener = connectListener;
 	}
 
-	public Vector<WRRelation> getWrRelations() {
-		return wrRelations;
-	}
-	
-	private final Workstation createWorkstation(){
+	private final Workstation createWorkstation(int workstationPort){
 		
-		final Workstation workstation = new Workstation(Config.WORKSTATION_UDP_PORT + workStationNum);
-		workStationNum++;
+		final Workstation workstation = new Workstation(workstationPort);
 		workstation.start();
 		
 		return workstation;
 	}
 	
 	public void connectReceiver(){
-		wrRelations = new Vector<WRRelation>();
+		System.out.println("连接接收机...");
+		
 		int findReveiverNum = 0;
 		try {
 		    ServerSocket server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
-			Socket receiver = null;  
+			Socket socket = null;
 			boolean f = true;  
 			while(f){  
 				//等待客户端的连接，如果没有获取连接  
-				receiver = server.accept(); 
-				System.out.println("搜索到接收机！"); 
+				socket = server.accept(); 
 				findReveiverNum++;
 				
-				ControllerService controllerService = new ControllerService(receiver);
-				//一个接收机对应一个工作站
-				final Workstation workstation = createWorkstation();
+				ControllerService controllerService = new ControllerService(socket);
 				
 				//注册控制器的监听事件
 				controllerService.setControllerListener(new ControllerListener() {
-	
+					//一个接收机对应一个工作站
+					Workstation workstation = null;
+					
+					@Override
+					public void onNeedCreatedWorkstation(int workstationPort) {
+						// TODO Auto-generated method stub
+						workstation = createWorkstation(workstationPort);
+						workStationNum++;
+					}
+					
 					@Override
 					public void onReceivedReportMsg(byte[] reportBuffer) {
 						// TODO Auto-generated method stub
 
-						// TODO Auto-generated method stub
 						if ((reportBuffer[99] & 0xFF) == 0x00 && (reportBuffer[100] & 0xFF) == 0x00) { //收到汇报报 通知工作站发送申请报
 							System.out.println("《发送申请报》");
 							workstation.sendApplyMessageByReportBuffer(reportBuffer);
@@ -89,19 +83,11 @@ public class ConnectManager {
 							System.out.println("\n《使用》\n");
 							
 							//取连接上的接收机端口和ip
-							byte[] ipBuffer = new byte[15];
-							byte[] portBuffer = new byte[2];
-							System.arraycopy(reportBuffer, 52, ipBuffer, 0, 15);
-							System.arraycopy(reportBuffer, 69, portBuffer, 0, 2);
+							String ip = new String(reportBuffer, 52, 15).trim();;
+							int port = ((reportBuffer[70] & 0xFF) << 8) + (reportBuffer[69] & 0xFF);
 							
-							String ip = new String(ipBuffer).trim();
-							int port = ((portBuffer[1] & 0xFF) << 8) + (portBuffer[0] & 0xFF);
-							
-							WRRelation wrRelation = new WRRelation(workstation, ip, port, Constance.Reveiver.FREE);
-							wrRelations.add(wrRelation);
-							
-							if (wrRelations.size() >= Config.RECEIVER_NUM) {
-								connectListener.onConnectEnd();
+							if (connectListener != null) {
+								connectListener.onConnectEnd(workstation, ip, port);
 							}
 							
 							break;
@@ -118,9 +104,8 @@ public class ConnectManager {
 				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
 				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start(); 
 				
-				System.out.println("---" + findReveiverNum);
 				//全部的接收机都已连接 退出搜索
-				if (findReveiverNum >= Config.RECEIVER_NUM) {
+				if (findReveiverNum >= tools.getProperty("receivers").split(",").length) {
 					f = false;
 				}
 			}  
@@ -131,4 +116,11 @@ public class ConnectManager {
 		}  
 		
 	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		connectReceiver();
+	}
+	
 }

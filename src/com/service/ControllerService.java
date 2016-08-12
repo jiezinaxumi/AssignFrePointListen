@@ -152,7 +152,18 @@ public class ControllerService implements Runnable {
 				//根据报文类型 发送对应的信息
 				switch (type) {
 				case REGISTER://登记报
-					sendMakeSureMessage(buffer);
+					String ip = new String(buffer, 52, 15).trim();;
+					int port = ((buffer[70] & 0xFF) << 8) + (buffer[69] & 0xFF);
+					String[] receivers = tools.getProperty("receivers").split(",");
+					for (String receiver : receivers) {
+						String rPort = tools.getProperty(receiver + ".port");
+						String rIp = tools.getProperty(receiver + ".ip");
+						String workstationPort =  tools.getProperty(receiver + ".workstation.port");
+						if (ip.equals(rIp) && port == Integer.parseInt(rPort)) {
+							sendMakeSureMessage(buffer);
+							controllerListener.onNeedCreatedWorkstation(Integer.parseInt(workstationPort));
+						}
+					}
 					break;
 				case DETECT://探测报
 					break;

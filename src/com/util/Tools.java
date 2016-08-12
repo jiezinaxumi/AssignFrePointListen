@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
@@ -226,6 +227,11 @@ public class Tools {
      * void
      */ 
     public void mvSrcFileToDestFile(final String srcFileName, final String destFileName){
+    	File path = new File(destFileName);
+		if (!path.getParentFile().exists()) {
+			path.getParentFile().mkdirs();
+		}
+		
     	File file = new File(srcFileName);
     	try {
 			FileInputStream is = new FileInputStream(file);
@@ -239,6 +245,41 @@ public class Tools {
 				os.close();
 				is.close();
 				file.delete();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * @Method: cpSrcFileToDestFile 
+     * @Description:拷贝文件
+     * @param srcFileName 源文件
+     * @param destFileName 目标文件
+     * void
+     */
+    public void cpSrcFileToDestFile(final String srcFileName, final String destFileName){
+    	File path = new File(destFileName);
+		if (!path.getParentFile().exists()) {
+			path.getParentFile().mkdirs();
+		}
+		
+    	File file = new File(srcFileName);
+    	try {
+			FileInputStream is = new FileInputStream(file);
+			FileOutputStream os = new FileOutputStream(destFileName, true);
+			try {
+				int data;
+				while((data = is.read()) != -1){
+					os.write(data);
+				}
+				os.flush();
+				os.close();
+				is.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -263,27 +304,31 @@ public class Tools {
     	return new Date().getTime() / 1000;
     }
     
+    SimpleDateFormat df3 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public String formatDate(String date){
+    	try {
+			date = df3.format(df.parse(date));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	return date;
+    }
+    
     //读取properties文件
-	public String getProperty(String key) {
-		String value = null;
-		Properties pps = new Properties();
+    
+    static Properties pps = new Properties();
+    static{
 		try {
 			String path = Thread.currentThread().getContextClassLoader().getResource("assign_fre_point_listen.properties").getPath();
 			pps.load(new FileInputStream(path));
-			value = pps.getProperty(key);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return value;
+    }
+	public String getProperty(String key) {
+		return pps.getProperty(key);
 	}
 	
-	public static void main(String[] args) {
-		String path = "D:\\newdata4\\1.wav";
-		File file = new File(path);
-  	  if (!file.getParentFile().exists()) {
-  	   file.getParentFile().mkdirs();
-  	  }
-  	  
-		
-	}
 }
