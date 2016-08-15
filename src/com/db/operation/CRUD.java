@@ -34,17 +34,31 @@ public class CRUD {
 		return rs;
 	}
 	
-	public void update(String sql){
-		conn = DBConn.getConn();
+	public void close(){
 		try {
-			st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+			st.close();
+			conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void update(String sql){
+		Connection conn = DBConn.getConn();
+		Statement st = null;;
+		try {
+			 st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
 			st.executeUpdate(sql);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally{
 			try {
-				st.close();
+				if (st != null) {
+					st.close();
+				}
 				conn.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
@@ -55,17 +69,6 @@ public class CRUD {
 	
 	public void instert(String sql){
 		update(sql);
-	}
-	
-	public void close(){
-		try {
-			st.close();
-			conn.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 	}
 	
 	public void printSearchContent(ResultSet rs, String description){

@@ -30,6 +30,7 @@ public class FileManager {
 	
 	boolean beginWrite = false; // 开始写文件
 	boolean isWriteFileEnd = false;
+	boolean isWriteWaveHead =  false;
 	
 	public void setFileListener(FileListener fileListener){
 		this.fileListener = fileListener;
@@ -58,7 +59,9 @@ public class FileManager {
 		//初始开始时间和文件名
 		if (!beginWrite) {
 			System.out.println("写文件...");
+			
 			beginWrite = true;
+			isWriteWaveHead = false;
 			dataLength = 0;
 			changeFileNameBetweenTime = 0;
 			
@@ -82,7 +85,9 @@ public class FileManager {
 				fileListener.onWriteFileEnd(fileName, filePath + fileName, beginWriteFileTime, tools.getCurrentTime());
 				fileListener.onWriteTotalFileEnd();
 			}
+			
 			isWriteFileEnd = true;
+			
 			return;
 		}
 		
@@ -104,6 +109,7 @@ public class FileManager {
 		
 		dataLength += stcp.length - startPos;
 		tools.writeToFile(fileTemp, stcp, startPos);
+		isWriteWaveHead = false;
 	}
 	
 	/** 
@@ -112,11 +118,26 @@ public class FileManager {
 	 * void
 	 */ 
 	private void writeWaveHeadToFile(){
+		isWriteWaveHead = true;
+		
 		fileName = beginWriteFileTime + "_" + tools.getCurrentTime() + ".wav"; 
 		int sample = Integer.parseInt(tools.getProperty("wave.samples_per_sec")) ;
 		byte[] head = WaveHeader.getHeader(dataLength / 2, sample);
 	
 		tools.writeToFile(savePath + fileName, head, 0);
+	}
+	
+	public void stopCurrentWrite(){
+		if (!isWriteWaveHead) {
+			writeWaveHeadToFile();
+			tools.writeToFileEnd();
+			tools.mvSrcFileToDestFile(fileTemp, savePath + fileName);
+			
+			if (fileListener != null) {
+				fileListener.onWriteFileEnd(fileName, filePath + fileName, beginWriteFileTime, tools.getCurrentTime());
+				fileListener.onWriteTotalFileEnd();
+			}
+		}
 	}
 }
  

@@ -17,7 +17,6 @@ public class Config {
 	public static final int RETURN_TYPE = 0x80; //数据返回类型
 	public static final int UNIT_NUMBER = 0x0000; //单位编号  2字节
 	
-	public static final int FILE_TIME = 6; //秒
-	public static final int COPY_FILE_TIME = 10000; //10秒拷贝一次文件到远程
-	public static final int SEARCH_TASK_TIME = 1000; //每秒搜索一次任务
+	public static final int FILE_TIME = 60; //秒
+	public static final int SEARCH_TASK_TIME = 5000; //每5秒搜索一次任务
 }

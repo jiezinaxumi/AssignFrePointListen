@@ -143,7 +143,7 @@ public class Tools {
 		return ip;
 	}
     
-    private FileOutputStream fw = null;
+    private FileOutputStream out = null;
     private String filePath = null;
     /** 
      * @Method: writeToFile 
@@ -154,22 +154,23 @@ public class Tools {
      * void
      */ 
     public void writeToFile(final String path, byte[] content, int startPos){
-		File file = new File(path);
-		if (!file.getParentFile().exists()) {
-			file.getParentFile().mkdirs();
-		}
-    	
-    	//是新文件 如果fw不为空 说明已写过文件 则flush到文件然后close， 然后重新new一个
+    	//是新文件 如果out不为空 说明已写过文件 则flush到文件然后close， 然后重新new一个
     	if (!path.equals(filePath)) {
-    		if (fw != null) {
+    		//判断目录是否存在 不存在创建
+    		File file = new File(path);
+    		if (!file.getParentFile().exists()) {
+    			file.getParentFile().mkdirs();
+    		}
+    		
+    		if (out != null) {
     			try {
-					fw.flush();
+					out.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}finally{
 					try {
-						fw.close();
+						out.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -177,22 +178,24 @@ public class Tools {
 				}
 				
 			}
-    		
-    		filePath = path;
-		    try {
-				fw = new FileOutputStream(path, true);
-			} catch (IOException e) {
+    		try {
+				out = new FileOutputStream(path, true);
+			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+    		filePath = path;
 		}
     
     
     	try {
-			fw.write(content, startPos, content.length - startPos);
-		} catch (IOException e1) {
+    		if (!out.getFD().valid()) {
+    			out = new FileOutputStream(path, true);
+			}
+			out.write(content, startPos, content.length - startPos);
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			e.printStackTrace();
 		}
     }
        
@@ -202,15 +205,15 @@ public class Tools {
      * void
      */ 
     public void writeToFileEnd(){
-    	if (fw != null) {
+    	if (out != null) {
 			try {
-				fw.flush();
+				out.flush();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}finally{
 				try {
-					fw.close();
+					out.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

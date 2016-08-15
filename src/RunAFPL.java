@@ -42,7 +42,8 @@ public class RunAFPL{
 				
 				//开始任务
 				try {
-					searchTask(workstation, receiverIp, receiverPort);
+					FileManager fileManager = new FileManager();
+					searchTask(workstation, fileManager, receiverIp, receiverPort);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -55,10 +56,9 @@ public class RunAFPL{
 		new Thread(connectManager).start(); //开启线程  连接接收机
 	}
 	
-	public void searchTask(Workstation workstation, String receiverIp, int receiverPort) throws SQLException, InterruptedException{
+	public void searchTask(Workstation workstation, FileManager fileManager, String receiverIp, int receiverPort) throws SQLException, InterruptedException{
 		Log.out.debug("查询任务...");
 		CRUD crud = new CRUD();
-		int taskPriorty = Constance.FreqPri.NORMAL;
 		int receiverStatus = Constance.Reveiver.FREE;
 		
 		while(true){
@@ -80,7 +80,7 @@ public class RunAFPL{
 						 "left join tab_mam_freq f on f.freq_id=g.freq_id " +
 						 "left join tab_mam_receiver r on r.receiver_id=g.receiver_id " +
 						 "where g.status=70 and g.start_time<=sysdate and r.ip='"+ receiverIp + "' and r.port=" + receiverPort + " " +
-						 "order by f.freq_pri";
+						 "order by f.freq_pri DESC";
 			ResultSet taskRS = crud.find(taskSql);
 			
 //			System.out.println(taskSql);
@@ -91,18 +91,17 @@ public class RunAFPL{
 				int grapId = taskRS.getInt("grap_id");
 				int freqId = taskRS.getInt("freq_id");
 				int taskId = taskRS.getInt("task_id");
-				int fileTotalTime = taskRS.getInt("length") * 6;//取得分钟
+				int fileTotalTime = taskRS.getInt("length") * 60;//取得分钟
 				String frequence = String.format("%08d", Integer.parseInt(taskRS.getString("freq_name")));//长度8 不够填0
 				String savePath = taskRS.getString("path");
 				
 				if (receiverStatus == Constance.Reveiver.BUSY) {
-					if (taskRS.getInt("priorty") > taskPriorty) {
-						taskPriorty = taskRS.getInt("priorty");
-						doTask(workstation, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
+					if (taskRS.getInt("priorty") == Constance.FreqPri.URGENCY) {//加急任务
+						fileManager.stopCurrentWrite();
+						doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 					}
 				}else if(receiverStatus == Constance.Reveiver.FREE){
-					taskPriorty = taskRS.getInt("priorty");
-					doTask(workstation, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
+					doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 				}
 				break;
 			}
@@ -114,15 +113,15 @@ public class RunAFPL{
 		}
 	}
 	
-	public void doTask(Workstation workstation, final String receiverIp, final int receiverPort, final String frequence, int fileTotalTime, final String savePath, final int freqId, final int taskId, final int grapId){
-		System.out.println("执行任务");
+	public void doTask(Workstation workstation, final FileManager fileManager, final String receiverIp, final int receiverPort, final String frequence, int fileTotalTime, final String savePath, final int freqId, final int taskId, final int grapId){
+		System.out.println("【--------执行 " + grapId + " 任务----------】");
 		//更新数据库接收机状态
 		updateReceiverStatus(receiverIp, receiverPort, Constance.Reveiver.BUSY);
 		updateGrapTaskStatus(grapId, Constance.Task.DOING);
 		
 		workstation.regulatingRevevierFrequency(frequence, receiverIp, receiverPort);
 		//配置文件管理类
-		final FileManager fileManager = new FileManager();
+//		final FileManager fileManager = new FileManager();
 		System.out.println("localSavePath " + localSavePath + "\nfileTime " + Config.FILE_TIME + "\ntotalTime " + fileTotalTime);
 		fileManager.setFileMsg(frequence, localSavePath, Config.FILE_TIME, fileTotalTime);
 		
@@ -224,7 +223,7 @@ public class RunAFPL{
  left join tab_task t on g.task_id=t.task_id
  left join tab_mam_freq f on f.freq_id=g.freq_id
  left join tab_mam_receiver r on r.receiver_id=g.receiver_id
- where g.status=70 and g.start_time<sysdate and r.ip='192.168.10.112' and r.port=4410;
+ where g.status=70 and g.start_time<sysdate and r.ip='192.168.10.120' and r.port=4410 order by f.freq_pri DESC;
  
  insert into tab_file (file_id, file_name, start_time,end_time ,freq_id, sto_id, sto_path, score_status, task_id)
 values(19, '20160812124030_20160812124032.wav', to_date('2016-08-12 12:40:30','yyyy-mm-dd hh24:mi:ss'),to_date('2016-08-12 12:40:32','yyyy-mm-dd hh24:mi:ss'),
