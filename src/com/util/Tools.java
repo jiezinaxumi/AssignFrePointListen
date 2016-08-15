@@ -209,12 +209,12 @@ public class Tools {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}finally{
-//				try {
-//					fw.close();
-//				} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+				try {
+					fw.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
     }
@@ -236,20 +236,20 @@ public class Tools {
     	try {
 			FileInputStream is = new FileInputStream(file);
 			FileOutputStream os = new FileOutputStream(destFileName, true);
-			try {
-				int data;
-				while((data = is.read()) != -1){
-					os.write(data);
-				}
-				os.flush();
-				os.close();
-				is.close();
-				file.delete();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			byte[] buffer = new byte[1024];
+			int byteRead;
+			while((byteRead = is.read(buffer)) != -1){
+				os.write(buffer, 0, byteRead);
 			}
+
+			os.flush();
+			os.close();
+			is.close();
+			file.delete();
 		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -272,19 +272,20 @@ public class Tools {
     	try {
 			FileInputStream is = new FileInputStream(file);
 			FileOutputStream os = new FileOutputStream(destFileName, true);
-			try {
-				int data;
-				while((data = is.read()) != -1){
-					os.write(data);
-				}
-				os.flush();
-				os.close();
-				is.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			
+			byte[] buffer = new byte[1024];
+			int byteRead;
+			while((byteRead = is.read(buffer)) != -1){
+				os.write(buffer, 0, byteRead);
 			}
+			
+			os.flush();
+			os.close();
+			is.close();
 		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

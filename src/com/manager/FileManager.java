@@ -6,7 +6,7 @@ import com.util.Tools;
 
 /**
  * @author Boris
- * @description 文件管理
+ * @description 写文件管理
  * 2016年8月9日
  */
 public class FileManager {
@@ -57,12 +57,12 @@ public class FileManager {
 		
 		//初始开始时间和文件名
 		if (!beginWrite) {
+			System.out.println("写文件...");
 			beginWrite = true;
 			dataLength = 0;
 			changeFileNameBetweenTime = 0;
 			
 			filePath = frequence + "\\" + tools.getCurrentDay() +"\\";
-//			savePath = frequence + "_" + tools.getCurrentDay() +"_";
 			savePath += filePath;
 			
 			beginTime = tools.getCurrentSecond();
@@ -80,6 +80,7 @@ public class FileManager {
 			
 			if (fileListener != null) {
 				fileListener.onWriteFileEnd(fileName, filePath + fileName, beginWriteFileTime, tools.getCurrentTime());
+				fileListener.onWriteTotalFileEnd();
 			}
 			isWriteFileEnd = true;
 			return;

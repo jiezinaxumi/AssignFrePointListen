@@ -1,4 +1,5 @@
-import com.util.Tools;
+import com.db.operation.CRUD;
+import com.util.Constance;
 
 
 /**
@@ -8,19 +9,15 @@ import com.util.Tools;
  */
 public class Test {
 
-	/**
-	 * @Method: main 
-	 * @Description:
-	 * @param args
-	 * void
-	 */
+	public static void updateGrapTaskStatus(){
+		CRUD crud = new CRUD();
+		String sql = "update tab_grap_task set status = " + Constance.Task.WAIT; 
+		crud.update(sql);
+	}
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Tools tools = Tools.getTools();
-		String freq = String.format("%08d", 2000000);
-		System.out.println(freq);
-		
+		updateGrapTaskStatus();
 	}
 
 }

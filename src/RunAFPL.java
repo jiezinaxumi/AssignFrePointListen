@@ -20,13 +20,11 @@ import com.util.Tools;
 
 public class RunAFPL{
 	private ConnectManager connectManager;
-	private CRUD crud;
 	private Tools tools;
 	private String localSavePath;
 	
 	public RunAFPL(){
 		connectManager = new ConnectManager();
-		crud = new CRUD();
 		tools = Tools.getTools();
 		localSavePath = Config.LOCAL_SAVE_PATH;
 	}
@@ -55,11 +53,11 @@ public class RunAFPL{
 			}
 		});
 		new Thread(connectManager).start(); //开启线程  连接接收机
-//		connectManager.connectReceiver();
 	}
 	
 	public void searchTask(Workstation workstation, String receiverIp, int receiverPort) throws SQLException, InterruptedException{
-//		CRUD crud = new CRUD();
+		Log.out.debug("查询任务...");
+		CRUD crud = new CRUD();
 		int taskPriorty = Constance.FreqPri.NORMAL;
 		int receiverStatus = Constance.Reveiver.FREE;
 		
@@ -85,13 +83,15 @@ public class RunAFPL{
 						 "order by f.freq_pri";
 			ResultSet taskRS = crud.find(taskSql);
 			
+//			System.out.println(taskSql);
+			
 //			printSearchContent(taskRS, "任务信息");
 		
 			while (taskRS.next()) {
 				int grapId = taskRS.getInt("grap_id");
 				int freqId = taskRS.getInt("freq_id");
 				int taskId = taskRS.getInt("task_id");
-				int fileTotalTime = taskRS.getInt("length") * 60;//取得分钟
+				int fileTotalTime = taskRS.getInt("length") * 6;//取得分钟
 				String frequence = String.format("%08d", Integer.parseInt(taskRS.getString("freq_name")));//长度8 不够填0
 				String savePath = taskRS.getString("path");
 				
@@ -101,7 +101,6 @@ public class RunAFPL{
 						doTask(workstation, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 					}
 				}else if(receiverStatus == Constance.Reveiver.FREE){
-					System.out.println("receiver free");
 					taskPriorty = taskRS.getInt("priorty");
 					doTask(workstation, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 				}
@@ -111,7 +110,7 @@ public class RunAFPL{
 			crud.close();
 //			break;
 			
-			//Thread.sleep(Config.SEARCH_TASK_TIME);
+			Thread.sleep(Config.SEARCH_TASK_TIME);
 		}
 	}
 	
@@ -148,7 +147,7 @@ public class RunAFPL{
 				String startT = tools.formatDate(startTime);
 				String endT = tools.formatDate(endTime);
 				
-				System.out.println("【--------截取音频结束----------");
+				System.out.println("【--------截取部分音频结束----------");
 				System.out.println("fileName" + fileName);
 				System.out.println("path " + path);
 				System.out.println("startTime " + startT);
@@ -157,25 +156,32 @@ public class RunAFPL{
 				System.out.println("taskId " + taskId);
 				System.out.println("------------------】");
 				
-				updateReceiverStatus(receiverIp, receiverPort, Constance.Reveiver.FREE);
-				updateGrapTaskStatus(grapId, Constance.Task.DONE);
-				
 				//插入文件表  id 没有自增
 				 String sql = "insert into tab_file (file_id,file_name, start_time,end_time ,freq_id, sto_id, sto_path, score_status, task_id) " +
 				              "values(seq_global.nextval,'"+fileName+"', to_date('"+startT+"','yyyy-mm-dd hh24:mi:ss'),to_date('"+endT+"','yyyy-mm-dd hh24:mi:ss'),"+freqId+",2,'"+path+"',70,"+taskId+")";
 				 FileInfo fileInfo = new FileInfo(localSavePath + path, savePath + path, sql);
-				 CopyFileManager.getInstance().getqFileInfos().offer(fileInfo);
+				 new Thread(new CopyFileManager(fileInfo)).start();
+			}
+
+			@Override
+			public void onWriteTotalFileEnd() {
+				// TODO Auto-generated method stub
+				System.out.println("【--------任务 " + grapId + " 结束----------】");
+				updateReceiverStatus(receiverIp, receiverPort, Constance.Reveiver.FREE);
+				updateGrapTaskStatus(grapId, Constance.Task.DONE);
 			}
 		});
 		
 	}
 	
 	public void updateReceiverStatus(String receiverIp, int receiverPort, int status){
+		CRUD crud = new CRUD();
 		String sql = "update tab_mam_receiver r set r.status = " + status + " where r.port = " + receiverPort + " and r.ip = '" + receiverIp + "'";
 		crud.update(sql);
 	}
 	
 	public void updateGrapTaskStatus(int grapId, int status){
+		CRUD crud = new CRUD();
 		System.out.println("更新task id " + grapId + " status" + status);
 		String sql = "update tab_grap_task set status = " + status + " where grap_id = " + grapId; 
 		crud.update(sql);
@@ -210,9 +216,6 @@ public class RunAFPL{
 	public static void main(String[] args) {
 		RunAFPL afpl = new RunAFPL();
 		afpl.connectReceiver();
-		
-		new Thread(CopyFileManager.getInstance()).start();; //开启把本地文件拷贝到远程文件的线程
-		
 	}
 }
 /*

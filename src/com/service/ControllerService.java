@@ -5,9 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Arrays;
 
 import com.buffer.ControllerBuffer;
@@ -21,10 +19,7 @@ import com.util.Tools;
  * 2016年7月28日
  */
 public class ControllerService implements Runnable {
-	private static ControllerService controllerService = null;
-
 	private static DatagramSocket udpSocket = null;
-	private static ServerSocket server = null;
 	private Socket tcpSocket = null;
 	
 	private ControllerListener controllerListener =  null;
@@ -37,7 +32,6 @@ public class ControllerService implements Runnable {
 	static{
 		try {
 			udpSocket = new DatagramSocket(Config.CONTROLLER_UDP_PORT);
-//			server = new ServerSocket(Config.CONTROLLER_TCP_PORT);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -59,6 +53,16 @@ public class ControllerService implements Runnable {
 		tcpSocket = socket;
 		controllerBuffer = new ControllerBuffer();
 		tools = Tools.getTools();
+	}
+	
+	/** 
+	 * @Method: setControllerListener 
+	 * @Description: 设置控制器的监听， 收到报文时处罚
+	 * @param listener
+	 * void
+	 */ 
+	public void setControllerListener(ControllerListener listener){
+		controllerListener = listener;
 	}
 	
 	/**
@@ -233,54 +237,4 @@ public class ControllerService implements Runnable {
 		
 	}
 	
-	///////////////////////// 外部接口 //////////////////////////////
-
-	/** 
-	 * @Method: start 
-	 * @Description: 开启服务（控制器）
-	 * void
-	 */ 
-	public void start(){
-		try {
-			Socket receiver = null;  
-			boolean f = true;  
-			int n = 0;
-			while(f && n < 3){  
-				//等待客户端的连接，如果没有获取连接  
-				receiver = server.accept(); 
-				ControllerService controllerService = new ControllerService(receiver);
-				controllerService.setControllerListener(controllerListener);
-				
-				System.out.println("搜索到接收机！");  
-				//为每个客户端连接开启一个线程  
-				new Thread(controllerService, ControllerService.LISTEN_RECEIVER).start();
-				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start();            
-				
-				n++;
-//				f = false;
-			}  
-			server.close();  
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}  
-	}
-	
-	/** 
-	 * @Method: setControllerListener 
-	 * @Description: 设置控制器的监听， 收到报文时处罚
-	 * @param listener
-	 * void
-	 */ 
-	public void setControllerListener(ControllerListener listener){
-		controllerListener = listener;
-	}
-	
-	public static ControllerService getInstance(){
-		if (controllerService == null) {
-			controllerService = new ControllerService();
-		}
-		
-		return controllerService;
-	}
 }

@@ -35,8 +35,6 @@ public class Workstation implements Runnable{
     
     public Workstation(int port){
     	try {
-    		System.out.println("端口 " + port);
-
 			datagramSocket = new DatagramSocket(port);
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
@@ -177,7 +175,6 @@ public class Workstation implements Runnable{
 			
 //			tools.printSTCP(stcp);
 			
-			//------
 			//判断调频是否成功
 			if (frequence != null && !isControled) {
 				byte[] frequenceBety = frequence.getBytes();
@@ -212,7 +209,6 @@ public class Workstation implements Runnable{
 					workstationListener.onRevivedData(stcp, i);
 				}
 			}
-			//-------
 			
 			dpReceived.setLength(MAX_RECEIVE_BUFFER);
 		}
