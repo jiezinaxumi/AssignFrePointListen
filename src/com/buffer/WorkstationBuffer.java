@@ -28,7 +28,7 @@ public class WorkstationBuffer extends Buffer {
 			args += "F" + frequence;
 		}
 		args += "M01" + "DAT" + Integer.toHexString(Config.RETURN_TYPE)
-				+ "LEN1024"; // 设置射频和返回的数据类型
+				+ "LEN1024" + "T128"; // 设置射频和返回的数据类型
 		byte[] argsBuffer = args.getBytes();
 		int argsSize = argsBuffer.length;
 
