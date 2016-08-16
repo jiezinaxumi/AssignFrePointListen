@@ -25,12 +25,15 @@ public class CopyFileManager implements Runnable{
 		System.out.println("拷贝文件到远程");
 		String srcFileName = fileInfo.getSrcPath();
 		String destFileName = fileInfo.getDestPath();
-		tools.cpSrcFileToDestFile(srcFileName, destFileName);
+		if (tools.cpSrcFileToDestFile(srcFileName, destFileName)) {
+			System.out.println("拷贝文件到远程结束");
+			
+			String sql = fileInfo.getSql();
+			crud.instert(sql);
+		}else{
+			System.out.println("文件小于100k 不拷贝");
+		}
 		
-		System.out.println("拷贝文件到远程结束");
-		
-		String sql = fileInfo.getSql();
-		crud.instert(sql);
 	}
 	
 	@Override

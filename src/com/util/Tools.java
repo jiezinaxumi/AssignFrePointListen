@@ -265,13 +265,16 @@ public class Tools {
      * @param destFileName 目标文件
      * void
      */
-    public void cpSrcFileToDestFile(final String srcFileName, final String destFileName){
+    public boolean cpSrcFileToDestFile(final String srcFileName, final String destFileName){
     	File path = new File(destFileName);
 		if (!path.getParentFile().exists()) {
 			path.getParentFile().mkdirs();
 		}
 		
     	File file = new File(srcFileName);
+    	if (file.length() < 102400) { //文件小于100k
+			return false; //不拷贝
+		}
     	try {
 			FileInputStream is = new FileInputStream(file);
 			FileOutputStream os = new FileOutputStream(destFileName, true);
@@ -292,6 +295,8 @@ public class Tools {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	
+    	return true;
     }
     
     private SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
