@@ -122,7 +122,7 @@ public class FileManager {
 		
 		fileName = beginWriteFileTime + "_" + tools.getCurrentTime() + ".wav"; 
 		int sample = Integer.parseInt(tools.getProperty("wave.samples_per_sec")) ;
-		byte[] head = WaveHeader.getHeader(dataLength / 2, sample);
+		byte[] head = WaveHeader.getHeader(dataLength, sample);
 	
 		tools.writeToFile(savePath + fileName, head, 0);
 	}
