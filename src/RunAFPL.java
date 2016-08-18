@@ -92,7 +92,7 @@ public class RunAFPL{
 				int freqId = taskRS.getInt("freq_id");
 				int taskId = taskRS.getInt("task_id");
 				int fileTotalTime = taskRS.getInt("length") * 60;//取得分钟
-				String frequence = String.format("%08d", Integer.parseInt(taskRS.getString("freq_name")));//长度8 不够填0
+				String frequence = String.format("%08d", Integer.parseInt(taskRS.getString("freq_name")) * 1000);//取得的是kHZ 乘1000变成HZ 长度8 不够填0
 				String savePath = taskRS.getString("path");
 				
 				if (receiverStatus == Constance.Reveiver.BUSY) {
@@ -121,10 +121,9 @@ public class RunAFPL{
 		
 		workstation.regulatingRevevierFrequency(frequence, receiverIp, receiverPort);
 		//配置文件管理类
-//		final FileManager fileManager = new FileManager();
 		System.out.println("localSavePath " + localSavePath + "\nfileTime " + Config.FILE_TIME + "\ntotalTime " + fileTotalTime);
-		fileManager.setFileMsg(frequence, localSavePath, Config.FILE_TIME, fileTotalTime);
-		
+//		fileManager.setFileMsg(frequence, localSavePath, Config.FILE_TIME, fileTotalTime); //大文件拆分成多个1分钟的小文件
+		fileManager.setFileMsg(frequence, localSavePath, fileTotalTime, fileTotalTime); //保存成一个大文件
 		// 写文件
 		workstation.setWorkstationListener(new WorkstationListener() {
 			
