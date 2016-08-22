@@ -330,7 +330,7 @@ public class Tools {
     static Properties pps = new Properties();
     static{
 		try {
-			String path = Thread.currentThread().getContextClassLoader().getResource("assign_fre_point_listen.properties").getPath();
+			String path = Thread.currentThread().getContextClassLoader().getResource("afpl.properties").getPath();
 			pps.load(new FileInputStream(path));
 		} catch (IOException e) {
 			Log.out.debug(e);
