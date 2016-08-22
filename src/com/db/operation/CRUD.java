@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.db.jdbc.DBConn;
+import com.util.Log;
 
 /**
  * @author Boris
@@ -26,7 +27,7 @@ public class CRUD {
 			rs = st.executeQuery(sql);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 		
 //		printSearchContent(rs, "查询的信息");
@@ -40,7 +41,7 @@ public class CRUD {
 			conn.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 		
 	}
@@ -53,7 +54,7 @@ public class CRUD {
 			st.executeUpdate(sql);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		} finally{
 			try {
 				if (st != null) {
@@ -62,7 +63,7 @@ public class CRUD {
 				conn.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Log.out.debug(e);
 			}
 		}
 	}
@@ -93,7 +94,7 @@ public class CRUD {
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 }

@@ -11,6 +11,7 @@ import java.util.Arrays;
 import com.buffer.ControllerBuffer;
 import com.listener.ControllerListener;
 import com.util.Config;
+import com.util.Log;
 import com.util.Tools;
 
 /**
@@ -34,7 +35,7 @@ public class ControllerService implements Runnable {
 			udpSocket = new DatagramSocket(Config.CONTROLLER_UDP_PORT);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 	
@@ -78,7 +79,7 @@ public class ControllerService implements Runnable {
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 	/**
@@ -182,7 +183,7 @@ public class ControllerService implements Runnable {
 			}
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 	
@@ -202,7 +203,7 @@ public class ControllerService implements Runnable {
 				udpSocket.receive(dpReceived);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Log.out.debug(e);
 			}//接受来自工作站的数据
 			byte[] receivedBuffer = Arrays.copyOfRange(dpReceived.getData(), dpReceived.getOffset(), 
 					dpReceived.getOffset() + dpReceived.getLength()); 

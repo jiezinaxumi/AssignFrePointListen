@@ -113,7 +113,7 @@ public class Tools {
 						msg += (b[0] & 0xFF) >= 0x80 ? hex.toUpperCase() : new String(b, "UTF-8");
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
+						Log.out.debug(e);
 					}
 					continue;
 				}
@@ -137,7 +137,7 @@ public class Tools {
 			ip = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}  
 		
 		return ip;
@@ -167,13 +167,13 @@ public class Tools {
 					out.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					Log.out.debug(e);
 				}finally{
 					try {
 						out.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
+						Log.out.debug(e);
 					}
 				}
 				
@@ -182,7 +182,7 @@ public class Tools {
 				out = new FileOutputStream(path, true);
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Log.out.debug(e);
 			}
     		filePath = path;
 		}
@@ -195,7 +195,7 @@ public class Tools {
 			out.write(content, startPos, content.length - startPos);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     }
        
@@ -210,13 +210,13 @@ public class Tools {
 				out.flush();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Log.out.debug(e);
 			}finally{
 				try {
 					out.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					Log.out.debug(e);
 				}
 			}
 		}
@@ -251,10 +251,10 @@ public class Tools {
 			file.delete();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     }
     
@@ -290,10 +290,10 @@ public class Tools {
 			is.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     	
     	return true;
@@ -319,7 +319,7 @@ public class Tools {
 			date = df3.format(df.parse(date));
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     	
     	return date;
@@ -333,7 +333,7 @@ public class Tools {
 			String path = Thread.currentThread().getContextClassLoader().getResource("assign_fre_point_listen.properties").getPath();
 			pps.load(new FileInputStream(path));
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     }
 	public String getProperty(String key) {

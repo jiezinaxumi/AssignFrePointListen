@@ -86,8 +86,6 @@ public class FileManager {
 				fileListener.onWriteTotalFileEnd();
 			}
 			
-			isWriteFileEnd = true;
-			
 			return;
 		}
 		

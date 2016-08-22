@@ -10,6 +10,7 @@ import java.util.Arrays;
 import com.buffer.WorkstationBuffer;
 import com.listener.WorkstationListener;
 import com.util.Config;
+import com.util.Log;
 import com.util.Tools;
 
 
@@ -38,7 +39,7 @@ public class Workstation implements Runnable{
 			datagramSocket = new DatagramSocket(port);
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     	tools = Tools.getTools();
     	workstationBuffer = new WorkstationBuffer();
@@ -76,7 +77,7 @@ public class Workstation implements Runnable{
 			datagramSocket.send(dpSend);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
     }
     
@@ -222,7 +223,7 @@ public class Workstation implements Runnable{
 			listenReceiver();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 		
 	}

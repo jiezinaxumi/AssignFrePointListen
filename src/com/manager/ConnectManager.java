@@ -9,6 +9,7 @@ import com.listener.ConnectListener;
 import com.listener.ControllerListener;
 import com.service.ControllerService;
 import com.util.Config;
+import com.util.Log;
 import com.util.Tools;
 
 /**
@@ -112,7 +113,7 @@ public class ConnectManager implements Runnable{
 			server.close();  
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}  
 		
 	}

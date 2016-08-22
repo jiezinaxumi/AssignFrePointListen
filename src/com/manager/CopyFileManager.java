@@ -2,6 +2,7 @@ package com.manager;
 
 import com.db.operation.CRUD;
 import com.pojo.FileInfo;
+import com.util.Log;
 import com.util.Tools;
 
 /**
@@ -42,7 +43,7 @@ public class CopyFileManager implements Runnable{
 		try {
 			cpFile();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 

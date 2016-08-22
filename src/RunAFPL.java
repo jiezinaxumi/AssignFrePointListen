@@ -46,10 +46,10 @@ public class RunAFPL{
 					searchTask(workstation, fileManager, receiverIp, receiverPort);
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					Log.out.debug(e);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					Log.out.debug(e);
 				}
 			}
 		});
@@ -114,7 +114,8 @@ public class RunAFPL{
 	}
 	
 	public void doTask(Workstation workstation, final FileManager fileManager, final String receiverIp, final int receiverPort, final String frequence, int fileTotalTime, final String savePath, final int freqId, final int taskId, final int grapId){
-		System.out.println("【--------执行 " + grapId + " 任务----------】");
+//		System.out.println("【--------执行 " + grapId + " 任务----------】");
+		Log.out.debug("【--------执行 " + grapId + " 任务----------】");
 		//更新数据库接收机状态
 		updateReceiverStatus(receiverIp, receiverPort, Constance.Reveiver.BUSY);
 		updateGrapTaskStatus(grapId, Constance.Task.DOING);
@@ -207,7 +208,7 @@ public class RunAFPL{
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.out.debug(e);
 		}
 	}
 	
