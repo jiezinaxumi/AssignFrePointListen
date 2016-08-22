@@ -60,6 +60,7 @@ public class RunAFPL{
 		Log.out.debug("查询任务...");
 		CRUD crud = new CRUD();
 		int receiverStatus = Constance.Reveiver.FREE;
+		int currentTaskPri = Constance.FreqPri.NORMAL;
 		
 		while(true){
 			//查询接收机状态
@@ -96,11 +97,13 @@ public class RunAFPL{
 				String savePath = taskRS.getString("path");
 				
 				if (receiverStatus == Constance.Reveiver.BUSY) {
-					if (taskRS.getInt("priorty") == Constance.FreqPri.URGENCY) {//加急任务
+					if (taskRS.getInt("priorty") == Constance.FreqPri.URGENCY && currentTaskPri != Constance.FreqPri.URGENCY) {//加急任务 且正在做的不是加急任务 则停止当前任务 做加急任务
+						currentTaskPri = Constance.FreqPri.URGENCY;
 						fileManager.stopCurrentWrite();
 						doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 					}
 				}else if(receiverStatus == Constance.Reveiver.FREE){
+					currentTaskPri = Constance.FreqPri.NORMAL;
 					doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 				}
 				break;
