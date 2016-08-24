@@ -85,7 +85,7 @@ public class FileManager {
 				fileListener.onWriteFileEnd(fileName, filePath + fileName, beginWriteFileTime, tools.getCurrentTime());
 				fileListener.onWriteTotalFileEnd();
 			}
-			
+			isWriteFileEnd = true;
 			return;
 		}
 		
