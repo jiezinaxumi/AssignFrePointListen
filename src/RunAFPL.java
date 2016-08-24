@@ -103,7 +103,7 @@ public class RunAFPL{
 						doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 					}
 				}else if(receiverStatus == Constance.Reveiver.FREE){
-					currentTaskPri = Constance.FreqPri.NORMAL;
+					currentTaskPri = taskRS.getInt("priorty");
 					doTask(workstation, fileManager, receiverIp, receiverPort, frequence, fileTotalTime, savePath, freqId, taskId, grapId);
 				}
 				break;
