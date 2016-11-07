@@ -216,6 +216,8 @@ public class RunAFPL{
 	}
 	
 	public static void main(String[] args) {
+//		String re = Tools.getTools().getProperty("receivers");
+//		System.out.println(re);
 		RunAFPL afpl = new RunAFPL();
 		afpl.connectReceiver();
 	}
