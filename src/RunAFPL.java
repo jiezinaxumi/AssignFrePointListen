@@ -26,7 +26,7 @@ public class RunAFPL{
 	public RunAFPL(){
 		connectManager = new ConnectManager();
 		tools = Tools.getTools();
-		localSavePath = Config.LOCAL_SAVE_PATH;
+		localSavePath = tools.getProperty("local_save_path");
 	}
 	
 	public void connectReceiver(){
@@ -216,6 +216,7 @@ public class RunAFPL{
 	}
 	
 	public static void main(String[] args) {
+		Log.out.debug("---------------------------");
 //		String re = Tools.getTools().getProperty("receivers");
 //		System.out.println(re);
 		RunAFPL afpl = new RunAFPL();

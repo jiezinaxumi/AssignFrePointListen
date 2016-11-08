@@ -159,8 +159,9 @@ public class ControllerService implements Runnable {
 				case REGISTER://µÇ¼Ç±¨
 					String ip = new String(buffer, 52, 15).trim();;
 					int port = ((buffer[70] & 0xFF) << 8) + (buffer[69] & 0xFF);
-					String[] receivers = tools.getProperty("receivers").split(",");
-					for (String receiver : receivers) {
+					int receivers = Integer.parseInt(tools.getProperty("receivers"));
+					for (int i = 1; i<=receivers; i++) {
+						String receiver = "receiver" + i;
 						String rPort = tools.getProperty(receiver + ".port");
 						String rIp = tools.getProperty(receiver + ".ip");
 						String workstationPort =  tools.getProperty(receiver + ".workstation.port");
