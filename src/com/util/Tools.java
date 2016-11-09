@@ -329,12 +329,13 @@ public class Tools {
     
     static Properties pps = new Properties();
     static{
-//			InputStream isInputStream = Tools.class.getClassLoader().getResourceAsStream("afpl.properties");
-//			String path1 = new File(Tools.class.getResource("/config/afpl.properties").getFile()).getAbsolutePath();
-//			System.out.println("path1 " + path1);
-			//String path = Thread.currentThread().getContextClassLoader().getResource("afpl.properties").getPath();
 			try {
-				pps.load(new FileInputStream("config/afpl.properties"));//这种需要把配置文件放到环境变量中
+				if (Config.RUN_ON_MYECLIPSE) {
+					String path = Thread.currentThread().getContextClassLoader().getResource("afpl.properties").getPath();
+					pps.load(new FileInputStream(path));
+				}else{
+					pps.load(new FileInputStream("config/afpl.properties"));//这种需要把配置文件放到环境变量中
+				}
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -342,7 +343,6 @@ public class Tools {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-//			pps.load(isInputStream);
     }
 	public String getProperty(String key) {
 		return pps.getProperty(key).trim();

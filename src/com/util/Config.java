@@ -7,6 +7,8 @@ package com.util;
  * 2016年7月28日
  */
 public class Config {
+	public static final boolean RUN_ON_MYECLIPSE = true;
+	
 	public static final String APPLAY_PWD = "abcdeabcdeabcdea"; //申请口令 16个数字，英文字符
 
 	public static final String LOCAL_SAVE_PATH = "D:\\file\\";
