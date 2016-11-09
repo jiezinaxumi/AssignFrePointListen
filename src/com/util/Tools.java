@@ -345,7 +345,7 @@ public class Tools {
 //			pps.load(isInputStream);
     }
 	public String getProperty(String key) {
-		return pps.getProperty(key);
+		return pps.getProperty(key).trim();
 	}
 	
 }
