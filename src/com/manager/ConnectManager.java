@@ -106,7 +106,7 @@ public class ConnectManager implements Runnable{
 				new Thread(controllerService, ControllerService.LISTENE_WORKSTATION).start(); 
 				
 				//全部的接收机都已连接 退出搜索
-				if (findReveiverNum >= tools.getProperty("receivers").split(",").length) {
+				if (findReveiverNum >=Integer.parseInt(tools.getProperty("receivers"))) {
 					f = false;
 				}
 			}  

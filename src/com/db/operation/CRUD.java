@@ -50,6 +50,7 @@ public class CRUD {
 		Connection conn = DBConn.getConn();
 		Statement st = null;;
 		try {
+			System.out.println(sql);
 			 st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
 			st.executeUpdate(sql);
 		} catch (SQLException e) {
